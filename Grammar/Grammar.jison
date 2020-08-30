@@ -12,7 +12,7 @@ id  (\"[^"]*\")
 
 {entero}                return 'ENTERO'
 {decimal}               return 'DECIMAL'
-{id}                    return 'ID'
+{id}                    return 'CADENA'
 
 //Operaciones Aritmeticas
 "*"                     return '*'
@@ -136,11 +136,11 @@ instrucciones
 instruccion
     : declaracion 
 ;
-
+/*--------------------------------------Declaracion y Asignacion de variables----------------------------------*/
 
 declaracion
-    : 'LET' def_tipo asignacion
-    | 'CONST' def_tipo asignacion
+    : 'LET'   'ID' def_tipo asignacion_declaracion
+    | 'CONST' 'ID' def_tipo '=' Expr ';'
 ;
 
 def_tipo 
@@ -148,9 +148,8 @@ def_tipo
     |
 ;
 
-
 asignacion_declaracion
-    : 'ID' '=' Expr
+    : '=' Expr ';'
     | ';'
 ;
 
@@ -162,6 +161,11 @@ tipo
     | 'ID'
 ;
 
+asignacion
+    : 'ID' '=' Expr ';'
+;
+
+/*----------------------------------------Expresiones Aritmeticas y Logicas--------------------------------------*/
 Expr
     : Expr '+' Expr
     {
@@ -214,19 +218,21 @@ F   : '(' Expr ')'
     { 
       //  $$ = $2;
     }
-    | DECIMAL
+    | 'DECIMAL'
     { 
      //   $$ = new Literal($1, @1.first_line, @1.first_column, 0);
     }
-    | NUMBER
+    | 'ENTERO'
     { 
       //  $$ = new Literal($1, @1.first_line, @1.first_column, 1);
     }
-    | STRING
+    | 'CADENA'
     {
       //  $$ = new Literal($1.replace(/\"/g,""), @1.first_line, @1.first_column, 2);
     }
-    | ID{
+    | 'ID' {
       //  $$ = new Access($1, @1.first_line, @1.first_column);
     }
+    //LLAMADA A FUNCION
+
 ;
