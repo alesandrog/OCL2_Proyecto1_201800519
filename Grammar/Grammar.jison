@@ -47,6 +47,7 @@ id  (\"[^"]*\")
 ";"                     return ';'
 ":"                     return ':'
 ","                     return ','
+"."                     return '.'
 "`"                     return '`'
 "$"                     return '$'
 "?"                     return '?'
@@ -65,6 +66,7 @@ id  (\"[^"]*\")
 "else"                  return 'ELSE'
 "switch"                return 'SWITCH'
 "case"                  return 'CASE'
+"default"               return 'DEFAULT'
 "while"                 return 'WHILE'
 "do"                    return 'DO'
 "for"                   return 'FOR'
@@ -117,14 +119,14 @@ id  (\"[^"]*\")
 %%
 
 Init    
-    : instrucciones EOF 
+    : Instrucciones EOF 
     {
         return $1;
     } 
 ;
 
-instrucciones
-    : instrucciones instruccion{
+Instrucciones
+    : Instrucciones instruccion{
        // $1.push($2);
        // $$ = $1;
     }
@@ -135,6 +137,12 @@ instrucciones
 
 instruccion
     : declaracion 
+    | If
+    | asignacion
+    | While
+    | DoWhile
+    | Switch
+    | Console
 ;
 /*--------------------------------------Declaracion y Asignacion de variables----------------------------------*/
 
@@ -164,6 +172,82 @@ tipo
 asignacion
     : 'ID' '=' Expr ';'
 ;
+
+
+/*-----------------------------------------Funciones , llamadas y parametros------------------------------------*/
+
+Console 
+    : 'CONSOLE' '.' 'LOG' '(' Expr ')' ';'
+;
+
+
+/*------------------------------------------- Estructuras de Control ---------------------------------------------*/
+
+
+If
+    : 'IF' '(' Expr ')' BloqueInstrucciones Else
+;
+
+Else
+    : 'ELSE' BloqueInstrucciones
+    | 'ELSE' If 
+    | /* epsilon */
+;
+
+While
+    : 'WHILE' '(' Expr ')' BloqueInstrucciones
+;
+
+DoWhile
+    : 'DO' BloqueInstrucciones 'WHILE' '(' Expr ')'
+;
+
+Switch
+    : 'SWITCH' '(' Expr ')' '{' BloqueCase Default '}'
+;
+
+BloqueCase
+    :  BloqueCase Case
+    |  Case
+;
+
+Case 
+    : 'CASE' Expr ':' Instrucciones
+;
+
+Default 
+    : 'DEFAULT' ':' Instrucciones
+    | /* epsilon */
+  ;
+
+
+
+BloqueInstrucciones
+    : '{'  Instrucciones '}' 
+    | '{' '}'
+  ; 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /*----------------------------------------Expresiones Aritmeticas y Logicas--------------------------------------*/
 Expr
