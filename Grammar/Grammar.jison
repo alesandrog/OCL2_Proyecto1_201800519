@@ -1,18 +1,22 @@
 %{
-
+    const {ExpresionAritmetica, OperacionesAritmeticas} = require('../Expression/ExpresionAritmetica');
+    const { Access } = require('../Expression/Access');
+    const { Literal } = require('../Expression/Literal');
+    const { Declaration } = require('../Instruction/Declaracion');     
+    const { Console } = require('../Instruction/Console');
 %}
 
 %lex
 %options case-sensitive
 entero  [0-9]+
 decimal {entero}"."{entero}
-id  (\"[^"]*\")
+cadena  (\"[^"]*\")
 %%
 \s+                   /* skip whitespace */
 
 {entero}                return 'ENTERO'
 {decimal}               return 'DECIMAL'
-{id}                    return 'CADENA'
+{cadena}                return 'CADENA'
 
 //Operaciones Aritmeticas
 "*"                     return '*'
@@ -127,18 +131,18 @@ Init
 
 Instrucciones
     : Instrucciones instruccion{
-       // $1.push($2);
-       // $$ = $1;
+        $1.push($2);
+        $$ = $1;
     }
     | instruccion{
-       // $$ = [$1];
+        $$ = [$1];
     }
 ;
 
 instruccion
     : declaracion 
     | If
-    | asignacion
+    | asignacion { $$ = $1; } 
     | While
     | DoWhile
     | Switch
@@ -148,7 +152,9 @@ instruccion
 
 declaracion
     : 'LET'   'ID' def_tipo asignacion_declaracion
+    { $$ = new Declaration( $2 , $4 , @1.first_line , @1.first_column);}
     | 'CONST' 'ID' def_tipo '=' Expr ';'
+    { $$ = new Declaracion( $2 , $5 , @1.first_line , @1.first_column);}
 ;
 
 def_tipo 
@@ -157,7 +163,7 @@ def_tipo
 ;
 
 asignacion_declaracion
-    : '=' Expr ';'
+    : '=' Expr ';' { $$ = $2; }
     | ';'
 ;
 
@@ -178,7 +184,9 @@ asignacion
 
 Console 
     : 'CONSOLE' '.' 'LOG' '(' Expr ')' ';'
+    {   $$ = new Console($5, @1.first_line, @1.first_column);}
 ;
+
 
 
 /*------------------------------------------- Estructuras de Control ---------------------------------------------*/
@@ -253,19 +261,19 @@ BloqueInstrucciones
 Expr
     : Expr '+' Expr
     {
-      //  $$ = new Arithmetic($1, $3, ArithmeticOption.PLUS, @1.first_line,@1.first_column);
+        $$ = new ExpresionAritmetica($1, $3, OperacionesAritmeticas.SUMA, @1.first_line,@1.first_column);
     }       
     | Expr '-' Expr
     {
-      //  $$ = new Arithmetic($1, $3, ArithmeticOption.MINUS, @1.first_line,@1.first_column);
+        $$ = new ExpresionAritmetica($1, $3, OperacionesAritmeticas.RESTA, @1.first_line,@1.first_column);
     }
     | Expr '*' Expr
     { 
-     //   $$ = new Arithmetic($1, $3, ArithmeticOption.TIMES, @1.first_line,@1.first_column);
+        $$ = new ExpresionAritmetica($1, $3, OperacionesAritmeticas.MULTIPLICACION, @1.first_line,@1.first_column);
     }       
     | Expr '/' Expr
     {
-      //  $$ = new Arithmetic($1, $3, ArithmeticOption.DIV, @1.first_line,@1.first_column);
+        $$ = new ExpresionAritmetica($1, $3, OperacionesAritmeticas.DIVISION, @1.first_line,@1.first_column);
     }
     | Expr '<' Expr
     {
@@ -304,18 +312,18 @@ F   : '(' Expr ')'
     }
     | 'DECIMAL'
     { 
-     //   $$ = new Literal($1, @1.first_line, @1.first_column, 0);
+         $$ = new Literal($1, @1.first_line, @1.first_column, 0);
     }
     | 'ENTERO'
     { 
-      //  $$ = new Literal($1, @1.first_line, @1.first_column, 1);
+         $$ = new Literal($1, @1.first_line, @1.first_column, 1);
     }
     | 'CADENA'
     {
-      //  $$ = new Literal($1.replace(/\"/g,""), @1.first_line, @1.first_column, 2);
+         $$ = new Literal($1.replace(/\"/g,""), @1.first_line, @1.first_column, 2);
     }
     | 'ID' {
-      //  $$ = new Access($1, @1.first_line, @1.first_column);
+         $$ = new Access($1, @1.first_line, @1.first_column);
     }
     //LLAMADA A FUNCION
 
