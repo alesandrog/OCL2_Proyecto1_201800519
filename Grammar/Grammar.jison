@@ -4,6 +4,7 @@
     const { Literal } = require('../Expression/Literal');
     const { Declaration } = require('../Instruction/Declaracion');     
     const { Console } = require('../Instruction/Console');
+    const { ExpresionLogica , OperacionLogica } = require('../Expression/ExpresionLogica');
 %}
 
 %lex
@@ -30,10 +31,10 @@ cadena  (\"[^"]*\")
 
 
 //Operaciones Relacionales
-"<"                     return '<'
-">"                     return '>'
 "<="                    return '<='
 ">="                    return '>='
+"<"                     return '<'
+">"                     return '>'
 "=="                    return '=='
 "!="                    return '!='
 "="                     return '='
@@ -76,6 +77,8 @@ cadena  (\"[^"]*\")
 "for"                   return 'FOR'
 "in"                    return 'IN'
 "of"                    return 'OF'
+"true"                  return 'TRUE'
+"false"                 return 'FALSE'
 
 //Sentencias de transferencia
 "return"                return 'RETURN'
@@ -277,38 +280,38 @@ Expr
     }
     | Expr '<' Expr
     {
-      //  $$ = new Relational($1, $3,RelationalOption.LESS, @1.first_line, @1.first_column);
+        $$ = new ExpresionLogica($1, $3, OperacionLogica.MENOR, @1.first_line,@1.first_column);
     }
     | Expr '<=' Expr
     {
-     //   $$ = new Relational($1, $3,RelationalOption.LESSOREQUAL ,@1.first_line, @1.first_column);
+        $$ = new ExpresionLogica($1, $3, OperacionLogica.MENORIG, @1.first_line,@1.first_column);
     }
     | Expr '>' Expr
     {
-     //   $$ = new Relational($1, $3,RelationalOption.GREATER ,@1.first_line, @1.first_column);
+        $$ = new ExpresionLogica($1, $3, OperacionLogica.MAYOR, @1.first_line,@1.first_column);
     }
     | Expr '>=' Expr
     {
-     //   $$ = new Relational($1, $3,RelationalOption.GREATEROREQUAL ,@1.first_line, @1.first_column);
+        $$ = new ExpresionLogica($1, $3, OperacionLogica.MAYORIG, @1.first_line,@1.first_column);
     }
     | Expr '==' Expr
     {
-     //   $$ = new Relational($1, $3,RelationalOption.EQUAL ,@1.first_line, @1.first_column);
+        $$ = new ExpresionLogica($1, $3, OperacionLogica.IGIG, @1.first_line,@1.first_column);
     }
     | Expr '!=' Expr
     {
-     //   $$ = new Relational($1, $3,RelationalOption.NOTEQUAL ,@1.first_line, @1.first_column);
+        $$ = new ExpresionLogica($1, $3, OperacionLogica.DIF, @1.first_line,@1.first_column);
     }
     | F
     {
-      //  $$ = $1;
+        $$ = $1;
     }
 ;
 
 
 F   : '(' Expr ')'
     { 
-      //  $$ = $2;
+        $$ = $2;
     }
     | 'DECIMAL'
     { 
@@ -320,11 +323,19 @@ F   : '(' Expr ')'
     }
     | 'CADENA'
     {
-         $$ = new Literal($1.replace(/\"/g,""), @1.first_line, @1.first_column, 2);
+         $$ = new Literal($1.replace(/\"/g,""), @1.first_line, @1.first_column, 3);
     }
     | 'ID' {
          $$ = new Access($1, @1.first_line, @1.first_column);
     }
+    | 'TRUE'
+    { 
+         $$ = new Literal($1, @1.first_line, @1.first_column, 2);
+    }
+    | 'FALSE'
+    { 
+         $$ = new Literal($1, @1.first_line, @1.first_column, 2);
+    }        
     //LLAMADA A FUNCION
 
 ;
