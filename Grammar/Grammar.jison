@@ -2,9 +2,21 @@
     const {ExpresionAritmetica, OperacionesAritmeticas} = require('../Expression/ExpresionAritmetica');
     const { Access } = require('../Expression/Access');
     const { Literal } = require('../Expression/Literal');
-    const { Declaration } = require('../Instruction/Declaracion');     
+    const { Declaration } = require('../Instruction/Declaracion');
+    const { If } = require('../Instruction/If');     
+    const { While } = require('../Instruction/While');
+    const { DoWhile } = require('../Instruction/DoWhile');
+    const { Asignacion } = require('../Instruction/Asignacion');    
     const { Console } = require('../Instruction/Console');
+    const { Switch } = require('../Instruction/Switch');
+    const { LlamadaFuncion } = require('../Instruction/LlamadaFuncion');
+    const { BloqueInstrucciones } = require('../Instruction/BloqueInstrucciones');    
+    const { Case } = require('../Instruction/Case');    
     const { ExpresionLogica , OperacionLogica } = require('../Expression/ExpresionLogica');
+    const { ExpresionUnaria , OperacionUnaria } = require('../Expression/OperacionUnaria');
+    const { Funcion } = require('../Instruction/Funcion');
+
+
 %}
 
 %lex
@@ -28,6 +40,7 @@ cadena  (\"[^"]*\")
 "--"                    return '--'
 "^"                     return '^'
 "%"                     return '%'
+
 
 
 //Operaciones Relacionales
@@ -120,6 +133,7 @@ cadena  (\"[^"]*\")
 %left '>=', '<=', '<', '>'
 %left '+' '-'
 %left '*' '/'
+%right '!'
 
 %start Init
 
@@ -144,12 +158,14 @@ Instrucciones
 
 instruccion
     : declaracion 
-    | If
-    | asignacion { $$ = $1; } 
+    | If         
+    | asignacion 
     | While
     | DoWhile
     | Switch
     | Console
+    | funcion
+    | llamadaFuncion
 ;
 /*--------------------------------------Declaracion y Asignacion de variables----------------------------------*/
 
@@ -180,6 +196,9 @@ tipo
 
 asignacion
     : 'ID' '=' Expr ';'
+    {
+        $$ = new Asignacion( $1 , $3 , @1.first_line , @1.first_column);
+    }
 ;
 
 
@@ -197,66 +216,117 @@ Console
 
 If
     : 'IF' '(' Expr ')' BloqueInstrucciones Else
+    {
+        $$ = new If($3, $5, $6, @1.first_line, @1.first_column);
+    }
 ;
 
 Else
-    : 'ELSE' BloqueInstrucciones
-    | 'ELSE' If 
-    | /* epsilon */
+    : 'ELSE' If
+    {
+        $$ = $2;
+    }
+    | 'ELSE' BloqueInstrucciones
+    {
+        $$ = $2;
+    }
+    | /* epsilon */ 
+    {
+        $$ = null;
+    }
 ;
 
 While
     : 'WHILE' '(' Expr ')' BloqueInstrucciones
+    {
+        $$ = new While( $3 , $5, @1.first_line, @1.first_column );
+    }
 ;
 
 DoWhile
-    : 'DO' BloqueInstrucciones 'WHILE' '(' Expr ')'
+    : 'DO' BloqueInstrucciones 'WHILE' '(' Expr ')' 
+    {
+        $$ = new DoWhile( $5 , $2, @1.first_line , @1.first_column);
+    }
 ;
 
 Switch
     : 'SWITCH' '(' Expr ')' '{' BloqueCase Default '}'
+    {
+        $$ = new Switch( $3 , $6 , $7, @1.first_line , @1.first_column);
+    }
 ;
 
 BloqueCase
     :  BloqueCase Case
+    {
+        $1.push($2);
+        $$ = $1;
+    }
     |  Case
+    {
+        $$ = [$1];
+    }
 ;
 
 Case 
     : 'CASE' Expr ':' Instrucciones
+    {
+        $$ = new Case( $2 , $4, @1.first_line, @1.first_column);
+    }
 ;
 
 Default 
     : 'DEFAULT' ':' Instrucciones
+    {
+        $$ = $3;
+    }
     | /* epsilon */
+    {
+        $$ = null;
+    }
   ;
 
 
 
 BloqueInstrucciones
-    : '{'  Instrucciones '}' 
+    : '{'  Instrucciones '}'
+    {
+        $$ = new BloqueInstrucciones($2, @1.first_line , @1.first_column);
+    } 
     | '{' '}'
+    {
+        $$ = null;
+    }
   ; 
 
 
+/*-----------------------------------------FUNCIONES------------------------------------------------*/
 
+funcion
+    : 'FUNCTION' 'ID' '(' parametros ')' BloqueInstrucciones
+    {
+        $$ = new Funcion($2 , $6,  $4, @1.first_line , @1.first_column);
+    };
 
+parametros
+    : parametros ',' parametro
+    {
+        $1.push($3);
+        $$ = $1;
+    }    
+    | parametro
+    {
+        $$ = [$1];
+    }    
+;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+parametro
+    : 'ID' ':' tipo
+    {
+        $$ = $1;
+    }
+;
 
 
 
@@ -302,6 +372,18 @@ Expr
     {
         $$ = new ExpresionLogica($1, $3, OperacionLogica.DIF, @1.first_line,@1.first_column);
     }
+    | Expr '&&' Expr
+    {
+        $$ = new ExpresionLogica($1, $3, OperacionLogica.AND, @1.first_line,@1.first_column);
+    }
+    | Expr '||' Expr
+    {
+        $$ = new ExpresionLogica($1, $3, OperacionLogica.OR, @1.first_line,@1.first_column);
+    }
+    | '!' Expr
+    {
+        $$ = new ExpresionUnaria($2,  OperacionUnaria.NOT, @1.first_line,@1.first_column);
+    }            
     | F
     {
         $$ = $1;
@@ -324,7 +406,7 @@ F   : '(' Expr ')'
     | 'CADENA'
     {
          $$ = new Literal($1.replace(/\"/g,""), @1.first_line, @1.first_column, 3);
-    }
+    } 
     | 'ID' {
          $$ = new Access($1, @1.first_line, @1.first_column);
     }
@@ -335,7 +417,28 @@ F   : '(' Expr ')'
     | 'FALSE'
     { 
          $$ = new Literal($1, @1.first_line, @1.first_column, 2);
-    }        
+    }
+        
     //LLAMADA A FUNCION
 
+;
+
+
+llamadaFuncion
+    : 'ID' '(' paramsExp ')' ';'
+    {
+        $$ = new LlamadaFuncion($1 , $3, @1.first_line , @1.first_column);
+    }
+    ;
+
+paramsExp
+    : paramsExp ',' Expr
+    {
+        $1.push($3);
+        $$ = $1;
+    }
+    | Expr
+    {
+        $$ = [$1];
+    }
 ;
