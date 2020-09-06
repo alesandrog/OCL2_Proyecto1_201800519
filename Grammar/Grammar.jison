@@ -126,7 +126,6 @@ cadena  (\"[^"]*\")
 "type"                  return 'TYPE'
 
 
-
 ([a-zA-Z_])[a-zA-Z0-9_ñÑ]*	return 'ID';
 <<EOF>>		            return 'EOF'
 
@@ -187,7 +186,7 @@ instruccion
     | 'RETURN' ';'
     {
         $$ = new Return(null , @1.first_line , @1.first_column);
-    }        
+    }
 ;
 /*--------------------------------------Declaracion y Asignacion de variables----------------------------------*/
 

@@ -1,2 +1,6 @@
-﻿/static
-/build
+﻿./static
+./build
+entrada.ts
+pruebas.js
+pruebas.ts
+**/*.js

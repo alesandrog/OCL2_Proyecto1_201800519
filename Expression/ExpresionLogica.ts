@@ -9,7 +9,10 @@ export enum OperacionLogica{
     MENORIG,
     MAYORIG,
     IGIG,
-    DIF
+    DIF,
+    AND,
+    OR,
+    NOT
 }
 
 export class ExpresionLogica extends Expresion{
@@ -25,7 +28,7 @@ export class ExpresionLogica extends Expresion{
         const tipoDominante = this.tipoDominante(izq.tipo, der.tipo);
         
         if(this.tipo == OperacionLogica.MAYOR){
-            if(tipoDominante == Tipo.BOOLEAN)
+            if(tipoDominante == Tipo.BOOLEAN || tipoDominante == Tipo.NUMBER)
                 result = {value : (Boolean(izq.value > der.value )), tipo : Tipo.BOOLEAN};
             else
                 throw new Error_(this.linea, this.columna, 'Semantico', 'No se puede operar: ' + Tipo[izq.tipo] + ' > ' +  Tipo[der.tipo]);            
@@ -60,6 +63,24 @@ export class ExpresionLogica extends Expresion{
             else
                 throw new Error_(this.linea, this.columna, 'Semantico', 'No se puede operar: ' + Tipo[izq.tipo] + ' != ' +  Tipo[der.tipo]);            
         }
+        else if(this.tipo == OperacionLogica.AND){
+            if(tipoDominante == Tipo.BOOLEAN )
+                result = {value : (Boolean(izq.value && der.value )), tipo : Tipo.BOOLEAN};
+            else
+                throw new Error_(this.linea, this.columna, 'Semantico', 'No se puede operar: ' + Tipo[izq.tipo] + ' && ' +  Tipo[der.tipo]);            
+        } 
+        else if(this.tipo == OperacionLogica.OR){
+            if(tipoDominante == Tipo.BOOLEAN )
+                result = {value : (Boolean(izq.value || der.value )), tipo : Tipo.BOOLEAN};
+            else
+                throw new Error_(this.linea, this.columna, 'Semantico', 'No se puede operar: ' + Tipo[izq.tipo] + ' || ' +  Tipo[der.tipo]);            
+        }
+        else if(this.tipo == OperacionLogica.NOT){
+            if(tipoDominante == Tipo.BOOLEAN)
+                result = {value : (Boolean( !izq.value )), tipo : Tipo.BOOLEAN};
+            else
+                throw new Error_(this.linea, this.columna, 'Semantico', 'No se puede operar: ' + ' !' +  Tipo[izq.tipo]);            
+        }                       
         return result!;
     }
 }
