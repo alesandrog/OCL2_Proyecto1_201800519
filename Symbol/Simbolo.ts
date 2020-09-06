@@ -5,13 +5,11 @@ export class Simbolo{
     public id : string;
     public tipo : Tipo;
     public variable : boolean;
-    public dimension : number;
 
-    constructor(valor: any, id: string, tipo: Tipo, variable : boolean , dimension : number){
+    constructor(valor: any, id: string, tipo: Tipo, variable : boolean){
         this.valor = valor;
         this.id = id;
         this.tipo = tipo;
         this.variable = variable;
-        this.dimension = dimension;
     }
 }

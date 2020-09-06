@@ -31,7 +31,7 @@ export class LlamadaFuncion extends Instruction{
                 const value = this.parametros[i].execute(entorno);
                 const variable = func.parametros[i];
                 if(Tipo[value.tipo] == Tipo[variable.tipo]){
-                    newEnv.guardarVariable(func.parametros[i].id, value.value, value.tipo, true, 0);
+                    newEnv.guardarVariable(func.parametros[i].id, value.value, value.tipo, true);
                 }else{
                     throw new Error_(this.linea, this.columna, 'Semantico', 'Tipos incompatibles ' + Tipo[value.tipo] + ' no asignable a ' +  Tipo[variable.tipo]);
                 }

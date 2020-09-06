@@ -1,6 +1,7 @@
 import { Simbolo } from "./Simbolo";
 import { Tipo } from "../Abstract/Retorno";
 import { Funcion } from "../Instruction/Funcion";
+import { SimboloArreglo } from "./SimboloArreglo";
 //importar funciones
 
 export class Entorno{
@@ -20,16 +21,28 @@ export class Entorno{
     }
 
     //TODO errores cuando no existan funciones
-    public guardarVariable(id: string, valor: any, tipo:Tipo, variable:boolean , dimension : number){
+    public guardarVariable(id: string, valor: any, tipo:Tipo, variable:boolean ){
         let env : Entorno | null = this;
         while(env != null){
             if(env.variables.has(id)){
-                env.variables.set(id, new Simbolo(valor, id, tipo, variable , dimension));
+                env.variables.set(id, new Simbolo(valor, id, tipo, variable));
                 return;
             }
             env = env.anterior;
         }
-        this.variables.set(id, new Simbolo(valor, id, tipo, variable, dimension));
+        this.variables.set(id, new Simbolo(valor, id, tipo, variable));
+    }
+
+    public guardarArreglo(id: string, valor: any, tipo:Tipo, variable:boolean, dimension : number, tipoExp : Tipo ){
+        let env : Entorno | null = this;
+        while(env != null){
+            if(env.variables.has(id)){
+                env.variables.set(id, new SimboloArreglo(valor, id, tipo, variable, dimension , tipoExp));
+                return;
+            }
+            env = env.anterior;
+        }
+        this.variables.set(id, new SimboloArreglo(valor, id, tipo, variable, dimension , tipoExp));
     }
 
     public getVariable(id: string) : Simbolo | undefined | null{

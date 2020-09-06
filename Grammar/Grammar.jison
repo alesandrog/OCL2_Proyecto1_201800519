@@ -3,7 +3,9 @@
     const {ExpresionAritmetica, OperacionesAritmeticas} = require('../Expression/ExpresionAritmetica');
     const { Access } = require('../Expression/Access');
     const { Literal } = require('../Expression/Literal');
+    const { Arreglo } = require('../Expression/Arreglo');
     const { Declaration } = require('../Instruction/Declaracion');
+    const { DeclaracionArreglo } = require('../Instruction/DeclaracionArreglo');    
     const { If } = require('../Instruction/If');     
     const { While } = require('../Instruction/While');
     const { DoWhile } = require('../Instruction/DoWhile');
@@ -193,31 +195,48 @@ instruccion
 declaracion
     : 'LET'   'ID' ':' tipo corchetes '=' Expr ';'
     { 
-        $$ = new Declaration( $2 , $7 , true, $4, $5, @1.first_line , @1.first_column);
+        /* let arr : number[][] = [[5]];*/
+        $$ = new DeclaracionArreglo( $2 , $7 , true, Tipo.ARRAY , $5, $4, @1.first_line , @1.first_column);
     }
+    | 'LET'   'ID' ':' tipo  corchetes ';'
+    { 
+        /* let arr : number[][]; */
+        $$ = new DeclaracionArreglo( $2 , null , true, Tipo.ARRAY , $5, $4, @1.first_line , @1.first_column);
+    }    
     | 'LET'   'ID' ':' tipo '=' Expr ';'
     { 
-        $$ = new Declaration( $2 , $6 , true, $4, 0,  @1.first_line , @1.first_column);
+        /* let arr : number = 5;*/        
+        $$ = new Declaration( $2 , $6 , true, $4,  @1.first_line , @1.first_column);
+    }
+    | 'LET'   'ID' ':' tipo ';'
+    { 
+        /* let arr : number;*/        
+        $$ = new Declaration( $2 , null , true, $4,  @1.first_line , @1.first_column);
     }   
     | 'LET'   'ID'  '=' Expr ';'
     {
-        $$ = new Declaration( $2 , $4 , true, Tipo.NULL, 0, @1.first_line , @1.first_column);
+         /* let arr = 5;*/
+        $$ = new Declaration( $2 , $4 , true, Tipo.NULL, @1.first_line , @1.first_column);
     }    
     | 'LET' 'ID' ';'
     {
-        $$ = new Declaration( $2 , null , true, Tipo.NULL, 0,@1.first_line , @1.first_column);
+        /* let arr; */
+        $$ = new Declaration( $2 , null , true, Tipo.NULL, @1.first_line , @1.first_column);
     }
     | 'CONST' 'ID' ':' tipo corchetes '=' Expr ';'
     { 
-        $$ = new Declaration( $2 , $7 , false, $4, $5, @1.first_line , @1.first_column);
+        /* const arr : number[][] = [[5]];*/
+        $$ = new DeclaracionArreglo( $2 , $7 , false, Tipo.ARRAY , $5, $4, @1.first_line , @1.first_column);
     }    
     | 'CONST' 'ID' ':' tipo '=' Expr ';'
     { 
-        $$ = new Declaration( $2 , $6 , false, $4,0, @1.first_line , @1.first_column);
+        /* const arr : number = 5;*/
+        $$ = new Declaration( $2 , $6 , false, $4, @1.first_line , @1.first_column);
     }
     | 'CONST' 'ID' '=' Expr ';'
     { 
-        $$ = new Declaration( $2 , $4 , false, Tipo.NULL,0, @1.first_line , @1.first_column);
+         /* const arr  = 5;*/
+        $$ = new Declaration( $2 , $4 , false, Tipo.NULL, @1.first_line , @1.first_column);
     }
 ;
 
@@ -257,7 +276,7 @@ tipo
     }
 ;
 
-asignacion
+asignacion    
     : 'ID' '=' Expr ';'
     {
         $$ = new Asignacion( $1 , $3 , @1.first_line , @1.first_column);
@@ -485,8 +504,12 @@ F   : '(' Expr ')'
     | llamadaFuncion
     | '[' paramsExp ']'
     { 
-         $$ = new Literal($2, @1.first_line, @1.first_column, Tipo.ARRAY);
-    }    
+         $$ = new Arreglo($2, @1.first_line, @1.first_column);
+
+    }
+    | 'ID' accesosCorchetes {
+         //$$ = new Access($1, @1.first_line, @1.first_column);
+    }        
     | 'ID' {
          $$ = new Access($1, @1.first_line, @1.first_column);
     }
@@ -496,6 +519,11 @@ F   : '(' Expr ')'
 
 ;
 
+accesosCorchetes
+    : accesosCorchetes '[' Expr ']'
+    | '[' Expr ']'
+;
+
 
 llamadaFuncion
     : 'ID' '(' paramsExp ')' 
@@ -503,6 +531,7 @@ llamadaFuncion
         $$ = new LlamadaFuncion($1 , $3, @1.first_line , @1.first_column);
     }
     ;
+
 
 paramsExp
     : paramsExp ',' Expr

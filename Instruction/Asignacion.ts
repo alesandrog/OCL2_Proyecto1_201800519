@@ -25,13 +25,13 @@ export class Asignacion extends Instruction{
             if(variable.variable == true){
                 if(variable.tipo != Tipo.NULL){
                     if(variable.tipo == val.tipo){
-                        entorno.guardarVariable(this.id, val.value, val.tipo, true, 0);
+                        entorno.guardarVariable(this.id, val.value, val.tipo, true);
                     }else{
                         throw new Error_(this.linea, this.columna, 'Semantico', 'Tipos incompatibles ' + Tipo[val.tipo] + ' no asignable a ' +  Tipo[variable.tipo]);
                     }
                 }else{
                     //Variable existe pero no ha sido asignada
-                    entorno.guardarVariable(this.id, val.value, val.tipo, true , 0);
+                    entorno.guardarVariable(this.id, val.value, val.tipo, true );
                 }
             }else{
                 throw new Error_(this.linea, this.columna, 'Semantico',   'const ' + this.id +' no puede ser re definido');
