@@ -1,4 +1,5 @@
 %{
+    const { Tipo } = require('../Abstract/Retorno');
     const {ExpresionAritmetica, OperacionesAritmeticas} = require('../Expression/ExpresionAritmetica');
     const { Access } = require('../Expression/Access');
     const { Literal } = require('../Expression/Literal');
@@ -15,7 +16,10 @@
     const { ExpresionLogica , OperacionLogica } = require('../Expression/ExpresionLogica');
     const { ExpresionUnaria , OperacionUnaria } = require('../Expression/OperacionUnaria');
     const { Funcion } = require('../Instruction/Funcion');
-
+    const { Break } = require('../Instruction/Break');
+    const { Continue } = require('../Instruction/Continue');
+    const { Return } = require('../Instruction/Return');
+    const { Parametro } = require('../Instruction/Parametro');
 
 %}
 
@@ -64,6 +68,8 @@ cadena  (\"[^"]*\")
 "}"                     return '}'
 ";"                     return ';'
 ":"                     return ':'
+"["                     return '['
+"]"                     return ']'
 ","                     return ','
 "."                     return '.'
 "`"                     return '`'
@@ -166,32 +172,90 @@ instruccion
     | Console
     | funcion
     | llamadaFuncion
+    | 'BREAK' ';'
+    {
+        $$ = new Break(@1.first_line , @1.first_column);
+    }
+    | 'CONTINUE' ';'
+    {
+        $$ = new Continue(@1.first_line , @1.first_column);
+    }
+    | 'RETURN' Expr ';'
+    {
+        $$ = new Return($2 , @1.first_line , @1.first_column);
+    }
+    | 'RETURN' ';'
+    {
+        $$ = new Return(null , @1.first_line , @1.first_column);
+    }        
 ;
 /*--------------------------------------Declaracion y Asignacion de variables----------------------------------*/
 
 declaracion
-    : 'LET'   'ID' def_tipo asignacion_declaracion
-    { $$ = new Declaration( $2 , $4 , @1.first_line , @1.first_column);}
-    | 'CONST' 'ID' def_tipo '=' Expr ';'
-    { $$ = new Declaracion( $2 , $5 , @1.first_line , @1.first_column);}
+    : 'LET'   'ID' ':' tipo corchetes '=' Expr ';'
+    { 
+        $$ = new Declaration( $2 , $7 , true, $4, $5, @1.first_line , @1.first_column);
+    }
+    | 'LET'   'ID' ':' tipo '=' Expr ';'
+    { 
+        $$ = new Declaration( $2 , $6 , true, $4, 0,  @1.first_line , @1.first_column);
+    }   
+    | 'LET'   'ID'  '=' Expr ';'
+    {
+        $$ = new Declaration( $2 , $4 , true, Tipo.NULL, 0, @1.first_line , @1.first_column);
+    }    
+    | 'LET' 'ID' ';'
+    {
+        $$ = new Declaration( $2 , null , true, Tipo.NULL, 0,@1.first_line , @1.first_column);
+    }
+    | 'CONST' 'ID' ':' tipo corchetes '=' Expr ';'
+    { 
+        $$ = new Declaration( $2 , $7 , false, $4, $5, @1.first_line , @1.first_column);
+    }    
+    | 'CONST' 'ID' ':' tipo '=' Expr ';'
+    { 
+        $$ = new Declaration( $2 , $6 , false, $4,0, @1.first_line , @1.first_column);
+    }
+    | 'CONST' 'ID' '=' Expr ';'
+    { 
+        $$ = new Declaration( $2 , $4 , false, Tipo.NULL,0, @1.first_line , @1.first_column);
+    }
 ;
 
-def_tipo 
-    : ':' tipo
-    |
+corchetes
+    : corchetes '[' ']'
+    {
+        var cantidad = eval('$1');
+        $$ = parseInt( cantidad++);
+    }
+    | '[' ']'
+    {
+        $$ = 1;
+    }
 ;
 
-asignacion_declaracion
-    : '=' Expr ';' { $$ = $2; }
-    | ';'
-;
 
 tipo
     : 'NUMBER'
+    {
+        $$ = Tipo.NUMBER;
+    }
     | 'STRING'
+    {
+        $$ = Tipo.STRING;
+    }    
     | 'BOOLEAN'
+    {
+        $$ = Tipo.BOOLEAN;
+    }
     | 'VOID'
+    {
+        $$ = Tipo.VOID;
+    }
     | 'ID'
+    {
+        $$ = Tipo.STRING;
+    }
 ;
 
 asignacion
@@ -304,9 +368,13 @@ BloqueInstrucciones
 /*-----------------------------------------FUNCIONES------------------------------------------------*/
 
 funcion
-    : 'FUNCTION' 'ID' '(' parametros ')' BloqueInstrucciones
+    : 'FUNCTION' 'ID' '(' parametros ')' ':' tipo BloqueInstrucciones 
     {
-        $$ = new Funcion($2 , $6,  $4, @1.first_line , @1.first_column);
+        $$ = new Funcion($2 , $8,  $4, $7, @1.first_line , @1.first_column);
+    }
+    | 'FUNCTION' 'ID' '(' parametros ')' BloqueInstrucciones 
+    {
+        $$ = new Funcion($2 , $6,  $4, Tipo.NULL, @1.first_line , @1.first_column);
     };
 
 parametros
@@ -324,7 +392,7 @@ parametros
 parametro
     : 'ID' ':' tipo
     {
-        $$ = $1;
+        $$ = new Parametro($1 , $3 , @1.first_line , @1.first_column);
     }
 ;
 
@@ -397,27 +465,33 @@ F   : '(' Expr ')'
     }
     | 'DECIMAL'
     { 
-         $$ = new Literal($1, @1.first_line, @1.first_column, 0);
+         $$ = new Literal($1, @1.first_line, @1.first_column, Tipo.NUMBER);
     }
     | 'ENTERO'
     { 
-         $$ = new Literal($1, @1.first_line, @1.first_column, 1);
+         $$ = new Literal($1, @1.first_line, @1.first_column, Tipo.NUMBER);
     }
     | 'CADENA'
     {
-         $$ = new Literal($1.replace(/\"/g,""), @1.first_line, @1.first_column, 3);
-    } 
-    | 'ID' {
-         $$ = new Access($1, @1.first_line, @1.first_column);
+         $$ = new Literal($1.replace(/\"/g,""), @1.first_line, @1.first_column, Tipo.STRING);
     }
     | 'TRUE'
     { 
-         $$ = new Literal($1, @1.first_line, @1.first_column, 2);
+         $$ = new Literal($1, @1.first_line, @1.first_column, Tipo.BOOLEAN);
     }
     | 'FALSE'
     { 
-         $$ = new Literal($1, @1.first_line, @1.first_column, 2);
+         $$ = new Literal($1, @1.first_line, @1.first_column, Tipo.BOOLEAN);
+    }     
+    | llamadaFuncion
+    | '[' paramsExp ']'
+    { 
+         $$ = new Literal($2, @1.first_line, @1.first_column, Tipo.ARRAY);
+    }    
+    | 'ID' {
+         $$ = new Access($1, @1.first_line, @1.first_column);
     }
+
         
     //LLAMADA A FUNCION
 
@@ -425,7 +499,7 @@ F   : '(' Expr ')'
 
 
 llamadaFuncion
-    : 'ID' '(' paramsExp ')' ';'
+    : 'ID' '(' paramsExp ')' 
     {
         $$ = new LlamadaFuncion($1 , $3, @1.first_line , @1.first_column);
     }
