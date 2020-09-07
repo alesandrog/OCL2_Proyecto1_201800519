@@ -2,6 +2,7 @@
     const { Tipo } = require('../Abstract/Retorno');
     const {ExpresionAritmetica, OperacionesAritmeticas} = require('../Expression/ExpresionAritmetica');
     const { Access } = require('../Expression/Access');
+    const { AccesoArray } = require('../Expression/AccesoArray');    
     const { Literal } = require('../Expression/Literal');
     const { Arreglo } = require('../Expression/Arreglo');
     const { Declaration } = require('../Instruction/Declaracion');
@@ -508,7 +509,7 @@ F   : '(' Expr ')'
 
     }
     | 'ID' accesosCorchetes {
-         //$$ = new Access($1, @1.first_line, @1.first_column);
+         $$ = new AccesoArray($1, $2, @1.first_line, @1.first_column);
     }        
     | 'ID' {
          $$ = new Access($1, @1.first_line, @1.first_column);
@@ -521,7 +522,14 @@ F   : '(' Expr ')'
 
 accesosCorchetes
     : accesosCorchetes '[' Expr ']'
+    {
+        $1.push($3);
+        $$ = $1;
+    }
     | '[' Expr ']'
+    {
+        $$ = [$2];
+    }
 ;
 
 

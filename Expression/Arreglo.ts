@@ -13,7 +13,7 @@ export class Arreglo extends Expresion{
         let result = [];
         for(const instr of this.value){
             const valor = instr.execute(entorno);
-            result.push(valor.value);
+            result.push(valor);
         }
 
         return { value : result , tipo : Tipo.ARRAY };

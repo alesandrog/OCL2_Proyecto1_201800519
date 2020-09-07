@@ -18,11 +18,7 @@ export class Literal extends Expresion{
 
             }
         }else if(this.tipo == Tipo.STRING)
-            return {value : this.value , tipo : Tipo.STRING};
-        else if(this.tipo == Tipo.ARRAY){
-            console.log(this.value[0].value[0].value);
-            return { value: this.value , tipo : Tipo.NULL};
-        }            
+            return {value : this.value , tipo : Tipo.STRING};            
         else
             return { value: this.value , tipo : Tipo.NULL};
     }
