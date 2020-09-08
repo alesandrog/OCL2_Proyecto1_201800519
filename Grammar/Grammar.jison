@@ -10,7 +10,8 @@
     const { If } = require('../Instruction/If');     
     const { While } = require('../Instruction/While');
     const { DoWhile } = require('../Instruction/DoWhile');
-    const { Asignacion } = require('../Instruction/Asignacion');    
+    const { Asignacion } = require('../Instruction/Asignacion');  
+    const { AsignacionArray } = require('../Instruction/AsignacionArray');    
     const { Console } = require('../Instruction/Console');
     const { Switch } = require('../Instruction/Switch');
     const { LlamadaFuncion } = require('../Instruction/LlamadaFuncion');
@@ -278,7 +279,11 @@ tipo
 ;
 
 asignacion    
-    : 'ID' '=' Expr ';'
+    : 'ID' accesosCorchetes '=' Expr ';'
+    {
+        $$ = new AsignacionArray( $1 , $4 , $2, @1.first_line , @1.first_column);
+    }
+    | 'ID' '=' Expr ';'
     {
         $$ = new Asignacion( $1 , $3 , @1.first_line , @1.first_column);
     }
