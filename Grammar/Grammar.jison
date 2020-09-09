@@ -185,7 +185,6 @@ instruccion
     : declaracion 
     | If 
     | Pushear
-    | Length
     | asignacion ';'
     | While
     | DoWhile
@@ -336,15 +335,17 @@ Pushear
     } 
     |  'ID'  '.' 'PUSH' '(' Expr ')'
     {
-        $$ = new Push($1 , null , $6 , @1.first_line , @1.first_column);
+        $$ = new Push($1 , null , $5 , @1.first_line , @1.first_column);
     } 
 ;
-Lengths
-    : 'ID' accesosCorchetes '.' 'LENGTH' '(' Expr ')'
+Length
+    : 'ID' accesosCorchetes '.' 'LENGTH' 
     {
+        let lastI3  = eval('$2');
+        lastI3.id = $1;        
         $$ = new Length($1 , $2, @1.first_line, @1.first_column);
     } 
-    | 'ID'  '.' 'LENGTH' '(' Expr ')'
+    | 'ID'  '.' 'LENGTH'
     {
         $$ = new Length($1 , null, @1.first_line, @1.first_column);
     } 
@@ -613,7 +614,8 @@ F   : '(' Expr ')'
     | 'FALSE'
     { 
          $$ = new Literal($1, @1.first_line, @1.first_column, Tipo.BOOLEAN);
-    }     
+    }
+    | Length     
     | llamadaFuncion
     | '[' paramsExp ']'
     { 
