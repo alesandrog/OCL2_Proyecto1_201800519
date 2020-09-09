@@ -55,7 +55,9 @@ export class LlamadaFuncion extends Instruction{
                     return instr.result;
                 }
             }
+        }else{
+            throw new Error_(this.linea, this.columna, ' Semantico ', this.id + ' no esta definida ' );
         }
-        throw new Error_(this.linea, this.columna, ' Semantico ', this.id + ' no esta definida ' );
+        return null;
     }
 }
