@@ -2,14 +2,27 @@
     const { Tipo } = require('../Abstract/Retorno');
     const {ExpresionAritmetica, OperacionesAritmeticas} = require('../Expression/ExpresionAritmetica');
     const { Access } = require('../Expression/Access');
-    const { AccesoArray } = require('../Expression/AccesoArray');    
+    const { AccesoArray } = require('../Expression/AccesoArray');
+    
+    
+    const { AccesoIndice } = require('../Expression/AccesoIndice');        
+    
+    
     const { Literal } = require('../Expression/Literal');
     const { Arreglo } = require('../Expression/Arreglo');
+
+    
+    const { Arreglo2 } = require('../Instruction/Arreglo2');    
+    
+    
     const { Declaration } = require('../Instruction/Declaracion');
     const { DeclaracionArreglo } = require('../Instruction/DeclaracionArreglo');    
     const { If } = require('../Instruction/If');     
     const { While } = require('../Instruction/While');
     const { DoWhile } = require('../Instruction/DoWhile');
+    const { For } = require('../Instruction/For');
+    const { ForIn } = require('../Instruction/ForIn');
+    const { ForOf } = require('../Instruction/ForOf');    
     const { Asignacion } = require('../Instruction/Asignacion');  
     const { AsignacionArray } = require('../Instruction/AsignacionArray');    
     const { Console } = require('../Instruction/Console');
@@ -24,6 +37,7 @@
     const { Continue } = require('../Instruction/Continue');
     const { Return } = require('../Instruction/Return');
     const { Parametro } = require('../Instruction/Parametro');
+
 
 %}
 
@@ -168,13 +182,16 @@ Instrucciones
 instruccion
     : declaracion 
     | If         
-    | asignacion 
+    | asignacion ';'
     | While
     | DoWhile
+    | For
     | Switch
     | Console
     | funcion
-    | llamadaFuncion
+    | llamadaFuncion ';' 
+    | ForIn
+    | ForOf
     | 'BREAK' ';'
     {
         $$ = new Break(@1.first_line , @1.first_column);
@@ -279,11 +296,13 @@ tipo
 ;
 
 asignacion    
-    : 'ID' accesosCorchetes '=' Expr ';'
+    : 'ID' accesosCorchetes '=' Expr 
     {
+        let lastI  = eval('$2');
+        lastI.id = $1;
         $$ = new AsignacionArray( $1 , $4 , $2, @1.first_line , @1.first_column);
     }
-    | 'ID' '=' Expr ';'
+    | 'ID' '=' Expr 
     {
         $$ = new Asignacion( $1 , $3 , @1.first_line , @1.first_column);
     }
@@ -376,6 +395,53 @@ Default
   ;
 
 
+For
+    : 'FOR' '(' declaracion Expr ';' asignacion ')' BloqueInstrucciones
+    { 
+        $$ = new For( $3, $4 , $6, $8 , @1.first_line, @1.first_column);
+   }
+;
+
+
+
+ForIn
+    : 'FOR' '(' declaracion_for 'IN' Expr ')' BloqueInstrucciones
+    {
+        $$ = new ForIn( $3 , $5, $7, @1.first_line , @1.first_column);
+    }
+;
+
+ForOf
+    : 'FOR' '(' declaracion_for 'OF' Expr ')' BloqueInstrucciones
+    {
+        $$ = new ForOf( $3 , $5, $7, @1.first_line , @1.first_column);
+    }
+;
+
+
+declaracion_for
+    : 'LET'   'ID' ':' tipo 
+    { 
+        /* let arr : number;*/        
+        $$ = new Declaration( $2 , null , true, $4,  @1.first_line , @1.first_column);
+    }
+    | 'LET'   'ID'
+    { 
+        /* let arr : number;*/        
+        $$ = new Declaration( $2 , null , true, Tipo.NULL ,  @1.first_line , @1.first_column);
+    }
+    | 'CONST'   'ID' ':' tipo
+    { 
+        /* let arr : number;*/        
+        $$ = new Declaration( $2 , null , true, $4,  @1.first_line , @1.first_column);
+    }
+    | 'CONST'   'ID'  
+    { 
+        /* let arr : number;*/        
+        $$ = new Declaration( $2 , null , true, Tipo.NULL ,  @1.first_line , @1.first_column);
+    }
+;
+
 
 BloqueInstrucciones
     : '{'  Instrucciones '}'
@@ -399,7 +465,16 @@ funcion
     | 'FUNCTION' 'ID' '(' parametros ')' BloqueInstrucciones 
     {
         $$ = new Funcion($2 , $6,  $4, Tipo.NULL, @1.first_line , @1.first_column);
-    };
+    }
+    | 'FUNCTION' 'ID' '('  ')' ':' tipo BloqueInstrucciones 
+    {
+        $$ = new Funcion($2 , $7, null, $6 , @1.first_line , @1.first_column);
+    }
+    | 'FUNCTION' 'ID' '('  ')'  BloqueInstrucciones 
+    {
+        $$ = new Funcion($2 , $5,  null, Tipo.NULL, @1.first_line , @1.first_column);
+    }    
+;
 
 parametros
     : parametros ',' parametro
@@ -510,11 +585,14 @@ F   : '(' Expr ')'
     | llamadaFuncion
     | '[' paramsExp ']'
     { 
-         $$ = new Arreglo($2, @1.first_line, @1.first_column);
+         $$ = new Arreglo2($2, @1.first_line, @1.first_column);
 
     }
-    | 'ID' accesosCorchetes {
-         $$ = new AccesoArray($1, $2, @1.first_line, @1.first_column);
+    | 'ID'  accesosCorchetes {
+        // $$ = new AccesoArray($1, $2, @1.first_line, @1.first_column);
+        let lastIndex  = eval('$2');
+        lastIndex.id = $1;
+        $$ = lastIndex;       
     }        
     | 'ID' {
          $$ = new Access($1, @1.first_line, @1.first_column);
@@ -528,12 +606,14 @@ F   : '(' Expr ')'
 accesosCorchetes
     : accesosCorchetes '[' Expr ']'
     {
-        $1.push($3);
-        $$ = $1;
+//        $1.push($3);
+//        $$ = $1;
+          $$ = new AccesoIndice("" , $1 , $3 , @1.first_line , @1.first_column );
     }
     | '[' Expr ']'
     {
-        $$ = [$2];
+//        $$ = [$2];
+          $$ = new AccesoIndice("" , null , $2 , @1.first_line , @1.first_column );
     }
 ;
 
@@ -542,6 +622,10 @@ llamadaFuncion
     : 'ID' '(' paramsExp ')' 
     {
         $$ = new LlamadaFuncion($1 , $3, @1.first_line , @1.first_column);
+    }
+    | 'ID' '('  ')' 
+    {
+        $$ = new LlamadaFuncion($1 , null, @1.first_line , @1.first_column);
     }
     ;
 

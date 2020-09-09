@@ -7,7 +7,7 @@ import { Tipo } from "../Abstract/Retorno";
 
 export class Funcion extends Instruction{
 
-    constructor(private id: string, public code: BloqueInstrucciones, public parametros : Parametro[], public tipo :Tipo,  line : number, column : number){
+    constructor(private id: string, public code: BloqueInstrucciones, public parametros : Parametro[] | null, public tipo :Tipo,  line : number, column : number){
         super(line, column);
     }
 
