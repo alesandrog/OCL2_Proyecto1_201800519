@@ -37,12 +37,15 @@ export class Push extends Instruction{
         }else{
             let arreglo : any;
             arreglo = environment.getVariable(this.id);
-            if(arreglo != null && arreglo != undefined)
+            if(arreglo == null || arreglo == undefined){
                 return; //error
-            if(arreglo!.tipo != Tipo.ARRAY)
+            }
+
+            if(arreglo.tipo != Tipo.ARRAY){
                 return; //error
+            }
             const valor = this.value.execute(environment);
-            arreglo.value.push(valor);
+            arreglo.valor.push(valor);
         }
     }
 }
