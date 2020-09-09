@@ -36,9 +36,11 @@
     const { Break } = require('../Instruction/Break');
     const { Continue } = require('../Instruction/Continue');
     const { Return } = require('../Instruction/Return');
+    const { Push } = require('../Instruction/Push');
+    const { Length } = require('../Instruction/Length');        
     const { Parametro } = require('../Instruction/Parametro');
-
-
+    const { Error_ } = require("../Error/Error");
+    const { errores } = require('../Error/Errores');
 %}
 
 %lex
@@ -48,6 +50,8 @@ decimal {entero}"."{entero}
 cadena  (\"[^"]*\")
 %%
 \s+                   /* skip whitespace */
+"//".*										// comentario simple línea
+[/][*][^*]*[*]+([^/*][^*]*[*]+)*[/]			// comentario multiple líneas
 
 {entero}                return 'ENTERO'
 {decimal}               return 'DECIMAL'
@@ -96,11 +100,6 @@ cadena  (\"[^"]*\")
 "\""                    return '"'
 "\'"                    return '\''
 
-//Comentarios
-"\/\/"                  return '//'
-"\/\*"                  return '/*'
-"*/"                    return '*/'
-
 /*-----------RESERVADAS-------------------*/
 
 //Estructuras de Control
@@ -134,7 +133,7 @@ cadena  (\"[^"]*\")
 //Arrays
 "push"                  return 'PUSH'
 "pop"                   return 'POP'
-"Length"                return 'LENGTH'
+"length"                return 'LENGTH'
 
 //Tipos de dato
 "void"                  return 'VOID'
@@ -146,7 +145,10 @@ cadena  (\"[^"]*\")
 
 ([a-zA-Z_])[a-zA-Z0-9_ñÑ]*	return 'ID';
 <<EOF>>		            return 'EOF'
-
+.   { 
+    let error_lexico = new Error_(yylloc.first_line, yylloc.first_column, 'Lexico', yytext);
+    errores.push(error_lexico);
+    }
 
 /lex
 
@@ -181,7 +183,9 @@ Instrucciones
 
 instruccion
     : declaracion 
-    | If         
+    | If 
+    | Pushear
+    | Length
     | asignacion ';'
     | While
     | DoWhile
@@ -207,6 +211,10 @@ instruccion
     | 'RETURN' ';'
     {
         $$ = new Return(null , @1.first_line , @1.first_column);
+    }
+    | error  { 
+    let error_sintactico = new Error_(this._$.first_line, this._$.first_column, 'Sintactico', yytext);
+    errores.push(error_sintactico);
     }
 ;
 /*--------------------------------------Declaracion y Asignacion de variables----------------------------------*/
@@ -295,6 +303,8 @@ tipo
     }
 ;
 
+
+
 asignacion    
     : 'ID' accesosCorchetes '=' Expr 
     {
@@ -317,6 +327,28 @@ Console
 ;
 
 
+Pushear
+    : 'ID' accesosCorchetes '.' 'PUSH' '(' Expr ')'
+    {
+        let lastI2  = eval('$2');
+        lastI2.id = $1;
+        $$ = new Push($1 , $2 , $6 , @1.first_line , @1.first_column);
+    } 
+    |  'ID'  '.' 'PUSH' '(' Expr ')'
+    {
+        $$ = new Push($1 , null , $6 , @1.first_line , @1.first_column);
+    } 
+;
+Lengths
+    : 'ID' accesosCorchetes '.' 'LENGTH' '(' Expr ')'
+    {
+        $$ = new Length($1 , $2, @1.first_line, @1.first_column);
+    } 
+    | 'ID'  '.' 'LENGTH' '(' Expr ')'
+    {
+        $$ = new Length($1 , null, @1.first_line, @1.first_column);
+    } 
+;
 
 /*------------------------------------------- Estructuras de Control ---------------------------------------------*/
 
@@ -640,4 +672,20 @@ paramsExp
     {
         $$ = [$1];
     }
+;
+
+Type
+    : 'TYPE' '=' '{' atributosType '}'
+    {
+        //
+    }
+;
+
+atributosType
+    : atributosType atribType
+    | atribType
+;
+
+atribType
+    : 'ID' ':' Expr
 ;
