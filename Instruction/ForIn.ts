@@ -24,6 +24,8 @@ export class ForIn extends Instruction {
     this.limite = 0;
   }
 
+  //TODO validaciones de errores
+
   public execute(entorno: Entorno) {
     
     //Declarar la variable en un nuevo entorno
@@ -37,8 +39,7 @@ export class ForIn extends Instruction {
     this.limite = iterador.value.length;
     
     for(let i = 0; i < this.limite; i++){
-        let element = iterador.value[i];
-        entorno.guardarVariable(this.declaracion.id, element.value, element.tipo, this.declaracion.variable);
+        entorno.guardarVariable(this.declaracion.id, i, Tipo.NUMBER, this.declaracion.variable);
         this.code.execute(entorno);    
     }
     
