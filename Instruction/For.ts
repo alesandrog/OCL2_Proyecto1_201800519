@@ -37,8 +37,9 @@ export class For extends Instruction {
         }
         else if( exec instanceof Continue)
           continue;
-        condicion = this.condicion.execute(env);
+        
         this.actualizacion.execute(env);
+        condicion = this.condicion.execute(env);
         if (condicion.tipo != Tipo.BOOLEAN) {
           //errpr
         }

@@ -29,19 +29,20 @@ constructor( declaracion : Declaration , arreglo : Expresion, code : BloqueInstr
 public execute(entorno: Entorno) {
   
   //Declarar la variable en un nuevo entorno
+  let env = new Entorno(entorno);
 
-  const iterador = this.arreglo.execute(entorno);
+  const iterador = this.arreglo.execute(env);
 
   if(iterador.tipo != Tipo.ARRAY)
-      return;    //error
+    throw new Error_(this.linea, this.columna, 'Semantico', 'Valor no iterable' + Tipo[iterador.tipo]);
 
   //establecer limite del for
   this.limite = iterador.value.length;
   
   for(let i = 0; i < this.limite; i++){
       let element = iterador.value[i];
-      entorno.guardarVariable(this.declaracion.id, element.value, element.tipo, this.declaracion.variable);
-      this.code.execute(entorno);    
+      env.guardarVariable(this.declaracion.id, element.value, element.tipo, this.declaracion.variable);
+      this.code.execute(env);    
   }
   
 }
