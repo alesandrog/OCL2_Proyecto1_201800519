@@ -10,10 +10,13 @@
     
     const { Literal } = require('../Expression/Literal');
     const { Arreglo } = require('../Expression/Arreglo');
+    const { AccesoType } = require('../Expression/AccesoType');
+    const { AtributoType } = require('../Expression/AtributoType');
 
     
     const { Arreglo2 } = require('../Instruction/Arreglo2');    
-    
+    const { Type } = require('../Instruction/Types');    
+        
     
     const { Declaration } = require('../Instruction/Declaracion');
     const { DeclaracionArreglo } = require('../Instruction/DeclaracionArreglo');    
@@ -192,6 +195,7 @@ instruccion
     | Switch
     | Console
     | funcion
+    | Type
     | llamadaFuncion ';' 
     | ForIn
     | ForOf
@@ -617,17 +621,30 @@ F   : '(' Expr ')'
     }
     | Length     
     | llamadaFuncion
+    | 'ID' accesos
+    {
+        // $$ = new AccesoArray($1, $2, @1.first_line, @1.first_column);
+        let lastIndex  = eval('$2');
+        lastIndex.id = $1;
+        $$ = lastIndex;               
+    }    
     | '[' paramsExp ']'
     { 
          $$ = new Arreglo2($2, @1.first_line, @1.first_column);
 
     }
-    | 'ID'  accesosCorchetes {
+/*    | 'ID'  accesosCorchetes {
         // $$ = new AccesoArray($1, $2, @1.first_line, @1.first_column);
         let lastIndex  = eval('$2');
         lastIndex.id = $1;
         $$ = lastIndex;       
-    }        
+    }
+    | 'ID'  accesosTypes {
+        // $$ = new AccesoArray($1, $2, @1.first_line, @1.first_column);
+        let lastIndext  = eval('$2');
+        lastIndext.id = $1;
+        $$ = lastIndext;       
+    }            */
     | 'ID' {
          $$ = new Access($1, @1.first_line, @1.first_column);
     }
@@ -637,6 +654,30 @@ F   : '(' Expr ')'
 
 ;
 
+accesos
+    : accesos acceso
+    {
+        let acc = eval('$2');
+        acc.anterior = $1;
+        $$ = acc;
+    }
+    | acceso
+;
+
+acceso
+    : '.' 'ID'
+    {
+//        $$ = [$2];
+          $$ = new AccesoType("" , null , $2 , @1.first_line , @1.first_column );
+    }
+    | '[' Expr ']'
+    {
+//        $$ = [$2];
+          $$ = new AccesoIndice("" , null , $2 , @1.first_line , @1.first_column );
+    }
+    
+;    
+/*
 accesosCorchetes
     : accesosCorchetes '[' Expr ']'
     {
@@ -651,6 +692,21 @@ accesosCorchetes
     }
 ;
 
+
+accesosTypes
+    : accesosTypes '.' 'ID'
+    {
+//        $1.push($3);
+//        $$ = $1;
+          $$ = new AccesoType("" , $1 , $3 , @1.first_line , @1.first_column );
+    }
+    | '.' 'ID'
+    {
+//        $$ = [$2];
+          $$ = new AccesoType("" , null , $2 , @1.first_line , @1.first_column );
+    }
+;
+*/
 
 llamadaFuncion
     : 'ID' '(' paramsExp ')' 
@@ -677,17 +733,27 @@ paramsExp
 ;
 
 Type
-    : 'TYPE' '=' '{' atributosType '}'
+    : 'TYPE' 'ID' '=' '{' atributosType '}'
     {
-        //
+        $$ = new Type($2, $5 , @1.first_line , @1.first_column);
     }
 ;
 
 atributosType
     : atributosType atribType
+    {
+        $1.push($2);
+        $$ = $1;
+    }
     | atribType
+    {
+        $$ = [$1];
+    }
 ;
 
 atribType
     : 'ID' ':' Expr
+    {
+        $$ = new AtributoType($1, $3 , @1.first_line, @1.first_column);
+    }
 ;
