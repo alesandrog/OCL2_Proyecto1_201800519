@@ -1,5 +1,7 @@
 %{
     const { Tipo } = require('../Abstract/Retorno');
+    const { Simbolo } = require('../Symbol/Simbolo');
+
     const {ExpresionAritmetica, OperacionesAritmeticas} = require('../Expression/ExpresionAritmetica');
     const { Access } = require('../Expression/Access');
     const { AccesoArray } = require('../Expression/AccesoArray');
@@ -16,6 +18,7 @@
     
     const { Arreglo2 } = require('../Instruction/Arreglo2');    
     const { Type } = require('../Instruction/Types');    
+    const { DeclaracionType } = require('../Instruction/DeclaracionType');    
         
     
     const { Declaration } = require('../Instruction/Declaracion');
@@ -39,11 +42,17 @@
     const { Break } = require('../Instruction/Break');
     const { Continue } = require('../Instruction/Continue');
     const { Return } = require('../Instruction/Return');
+    const { Graficar } = require('../Instruction/Graficar');    
     const { Push } = require('../Instruction/Push');
     const { Length } = require('../Instruction/Length');        
     const { Parametro } = require('../Instruction/Parametro');
     const { Error_ } = require("../Error/Error");
     const { errores } = require('../Error/Errores');
+
+    /*MANEJO DE TYPES-------------------------------------------------------*/
+    const { AtrType } = require('../Instruction/AtrType');    
+    const { AccesoTipoType } = require('../Expression/AccesoTipoType');
+
 %}
 
 %lex
@@ -199,6 +208,10 @@ instruccion
     | llamadaFuncion ';' 
     | ForIn
     | ForOf
+    | 'GRAFICAR' '(' ')'
+    {
+        $$ = new Graficar(@1.first_line , @1.first_column);
+    }
     | 'BREAK' ';'
     {
         $$ = new Break(@1.first_line , @1.first_column);
@@ -228,11 +241,17 @@ declaracion
         /* let arr : number[][] = [[5]];*/
         $$ = new DeclaracionArreglo( $2 , $7 , true, Tipo.ARRAY , $5, $4, @1.first_line , @1.first_column);
     }
+    | 'LET'   'ID' ':' tipo '=' '{' atributosType '}'
+    { 
+        /* let arr : aidi = { value : piola };*/
+       // let tipo = new AccesoTipoType($1 , @1.first_line , @1.first_column);        
+        $$ = new Type( $2 , $7 , $4,  @1.first_line , @1.first_column);
+    }    
     | 'LET'   'ID' ':' tipo  corchetes ';'
     { 
         /* let arr : number[][]; */
         $$ = new DeclaracionArreglo( $2 , null , true, Tipo.ARRAY , $5, $4, @1.first_line , @1.first_column);
-    }    
+    }        
     | 'LET'   'ID' ':' tipo '=' Expr ';'
     { 
         /* let arr : number = 5;*/        
@@ -302,7 +321,7 @@ tipo
     }
     | 'ID'
     {
-        $$ = Tipo.STRING;
+        $$ = new AccesoTipoType($1 , @1.first_line , @1.first_column);
     }
 ;
 
@@ -733,16 +752,37 @@ paramsExp
 ;
 
 Type
-    : 'TYPE' 'ID' '=' '{' atributosType '}'
+    : 'TYPE' 'ID' '=' '{' decla_atr_type '}'
     {
-        $$ = new Type($2, $5 , @1.first_line , @1.first_column);
+        $$ = new DeclaracionType($2, $5 , @1.first_line , @1.first_column);
     }
 ;
 
-atributosType
-    : atributosType atribType
+
+decla_atr_type
+    : decla_atr_type ',' atr_type
     {
-        $1.push($2);
+        $1.push($3);
+        $$ = $1;
+    }
+    | atr_type
+    {
+        $$ = [$1];
+    }
+;
+
+atr_type
+    : 'ID' ':' tipo
+    {
+        $$ = new AtrType(  $1, $3, @1.first_line, @1.first_column);
+    }
+;
+
+
+atributosType
+    : atributosType ',' atribType
+    {
+        $1.push($3);
         $$ = $1;
     }
     | atribType
