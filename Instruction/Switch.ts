@@ -28,8 +28,8 @@ export class Switch extends Instruction{
             }
          }
          if(this.def != null){
-             entorno.cantidadCiclos++;
-            for(const instr of this.def){
+             entorno.cantidadCiclos++;            
+             for(const instr of this.def){
                 instr.execute(entorno)
             }
             entorno.cantidadCiclos--;

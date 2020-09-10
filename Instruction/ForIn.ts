@@ -8,6 +8,7 @@ import { Break } from "./Break";
 import { Continue } from "./Continue";
 import { Asignacion } from "./Asignacion";
 import { Declaration } from "./Declaracion";
+import { Return } from "./Return";
 
 export class ForIn extends Instruction {
  
@@ -40,8 +41,20 @@ export class ForIn extends Instruction {
     
     for(let i = 0; i < this.limite; i++){
         env.guardarVariable(this.declaracion.id, i, Tipo.NUMBER, this.declaracion.variable);
-        this.code.execute(env);    
-    }
+        env.cantidadCiclos++;
+        env.cantidadFunciones = entorno.cantidadFunciones;
+        const exec = this.code.execute(env);
+        env.cantidadCiclos--;
+        if (exec instanceof Break) {
+          break;
+        }
+        else if( exec instanceof Continue)
+          continue;    
+
+        if(exec instanceof Return)
+          return exec;
+
+        }
     
   }
 }

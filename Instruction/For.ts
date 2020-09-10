@@ -8,6 +8,7 @@ import { Break } from "./Break";
 import { Continue } from "./Continue";
 import { Asignacion } from "./Asignacion";
 import { Declaration } from "./Declaracion";
+import { Return } from "./Return";
 
 export class For extends Instruction {
   constructor(
@@ -26,10 +27,11 @@ export class For extends Instruction {
     this.declaracion.execute(env);
     let condicion = this.condicion.execute(env);
     if(condicion.tipo != Tipo.BOOLEAN)
-        return;    
-        //throw error
+      throw new Error_(this.linea, this.columna, 'Semantico', 'La condicion no es booleana ' + Tipo[condicion.tipo] );   
+
     while (condicion.value == true) {
         env.cantidadCiclos++;
+        env.cantidadFunciones = entorno.cantidadFunciones;
         const exec = this.code.execute(env);
         env.cantidadCiclos--;
         if (exec instanceof Break) {
@@ -38,10 +40,13 @@ export class For extends Instruction {
         else if( exec instanceof Continue)
           continue;
         
+        if(exec instanceof Return)
+          return exec;
+          
         this.actualizacion.execute(env);
         condicion = this.condicion.execute(env);
         if (condicion.tipo != Tipo.BOOLEAN) {
-          //errpr
+          throw new Error_(this.linea, this.columna, 'Semantico', 'La condicion no es booleana ' + Tipo[condicion.tipo] );   
         }
       }
     
