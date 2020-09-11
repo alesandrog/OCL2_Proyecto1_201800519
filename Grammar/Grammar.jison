@@ -30,6 +30,9 @@
     const { ForIn } = require('../Instruction/ForIn');
     const { ForOf } = require('../Instruction/ForOf');    
     const { Asignacion } = require('../Instruction/Asignacion');  
+
+    const { Concatenacion } = require('../Instruction/Concatenacion');  
+
     const { AsignacionArray } = require('../Instruction/AsignacionArray');    
     const { Console } = require('../Instruction/Console');
     const { Switch } = require('../Instruction/Switch');
@@ -72,10 +75,11 @@ cadena  (\"[^"]*\")
 //Operaciones Aritmeticas
 "*"                     return '*'
 "/"                     return '/'
-"-"                     return '-'
-"+"                     return '+'
+"+="                    return '+='
 "++"                    return '++'
 "--"                    return '--'
+"-"                     return '-'
+"+"                     return '+'
 "^"                     return '^'
 "%"                     return '%'
 
@@ -334,6 +338,10 @@ asignacion
         lastI.id = $1;
         $$ = new AsignacionArray( $1 , $4 , $2, @1.first_line , @1.first_column);
     }
+    | 'ID' '+=' Expr 
+    {
+        $$ = new Concatenacion( $1 , $3 , @1.first_line , @1.first_column);
+    }    
     | 'ID' '=' Expr 
     {
         $$ = new Asignacion( $1 , $3 , @1.first_line , @1.first_column);
@@ -797,3 +805,10 @@ atribType
         $$ = new AtributoType($1, $3 , @1.first_line, @1.first_column);
     }
 ;
+
+//TODO  strings con valores incrustados
+//TODO += , ++ , --
+//TODO valores nulos en types
+//TODO pop a arrays
+//TODO arrelar accesos a push y length
+//TODO operacion modulo
