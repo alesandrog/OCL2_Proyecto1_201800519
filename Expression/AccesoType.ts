@@ -6,6 +6,7 @@ import { Arreglo2 } from "../Instruction/Arreglo2";
 import { AccesoIndice } from "./AccesoIndice";
 import { Types } from "mysql";
 import { Type } from "../Instruction/Types";
+import { AccesoArray } from "./AccesoArray";
 
 export class AccesoType extends Expresion{
 
@@ -25,7 +26,7 @@ export class AccesoType extends Expresion{
     public execute(entorno : Entorno): any {
         let valor : any;
         if(this.anterior != null){
-            if(this.anterior instanceof AccesoType){
+            if(this.anterior instanceof AccesoType || this.anterior instanceof AccesoIndice){
                 this.anterior.id = this.id;
                 //retorno el map
                 valor = this.anterior.execute(entorno).value;
@@ -35,7 +36,7 @@ export class AccesoType extends Expresion{
         }else{
             let type : any;
             type = entorno.getVariable(this.id);
-            if(type.tipo == Tipo.TYPE){
+            if(type.tipo > 7){
             let res = type.valor.get(this.indice);
             return res;
             }
