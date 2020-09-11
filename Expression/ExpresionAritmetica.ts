@@ -22,8 +22,14 @@ export class ExpresionAritmetica extends Expresion {
   }
 
   public execute(entorno: Entorno): Retorno {
-    const izq = this.izq.execute(entorno);
-    const der = this.der.execute(entorno);
+    let izq = this.izq.execute(entorno);
+    let der = this.der.execute(entorno);
+    if(izq.tipo == Tipo.ARRAY){
+      izq = this.ejecutar(entorno, izq);
+    }
+    if(der.tipo == Tipo.ARRAY){
+      der = this.ejecutar(entorno, izq);
+    }
     let result: Retorno;
     const tipoDominante = this.tipoDominante(izq.tipo, der.tipo);
 
@@ -80,4 +86,17 @@ export class ExpresionAritmetica extends Expresion {
     }
     return result!;
   }
+
+
+  public ejecutar(entorno : Entorno, arreglo : Retorno): Retorno {
+    let res = [];
+    for(const instr of arreglo.value){
+        if(instr.tipo == Tipo.ARRAY){
+            res.push(this.ejecutar(entorno, instr).value);
+        }else{
+            res.push(instr.value);
+        }
+    }
+    return { value : res, tipo : Tipo.ARRAY };
+}
 }
