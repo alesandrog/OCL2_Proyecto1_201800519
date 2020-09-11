@@ -5,11 +5,12 @@ import { Entorno } from "../Symbol/Entorno";
 import { Error_ } from "../Error/Error";
 import { Retorno, Tipo } from "../Abstract/Retorno";
 import { Return } from "./Return";
+import { AccesoTipoType } from "../Expression/AccesoTipoType";
 
 
 export class LlamadaFuncion extends Instruction{
 
-    constructor(private id: string,  public parametros : Expresion[], line : number, column : number){
+    constructor(private id: string,  public parametros : Expresion[] | null, line : number, column : number){
         super(line, column);
     }
 
@@ -18,24 +19,36 @@ export class LlamadaFuncion extends Instruction{
         const func = entorno.getFuncion(this.id);
         if(func != undefined){
             let newEnv = new Entorno(entorno.getGlobal());
-            newEnv.cantidadFunciones++;
             //Validar cantidad de parametros 
-            if(this.parametros.length != func.parametros.length){
-                if(this.parametros.length > func.parametros.length)
-                    throw new Error_(this.linea, this.columna, 'Semantico', 'Exceso de parametros especificados para la funcion ');
-                else
-                    throw new Error_(this.linea, this.columna, 'Semantico', 'Faltan parametros ');
-            }
-            //Validar que los parametros reciban expresiones correctas
-            for(let i = 0; i < this.parametros.length; i++){
-                const value = this.parametros[i].execute(entorno);
-                const variable = func.parametros[i];
-                if(Tipo[value.tipo] == Tipo[variable.tipo]){
-                    newEnv.guardarVariable(func.parametros[i].id, value.value, value.tipo, true);
-                }else{
-                    throw new Error_(this.linea, this.columna, 'Semantico', 'Tipos incompatibles ' + Tipo[value.tipo] + ' no asignable a ' +  Tipo[variable.tipo]);
+            if(this.parametros != null){
+                if(this.parametros.length != func.parametros!.length){
+                    if(this.parametros.length > func.parametros!.length)
+                        throw new Error_(this.linea, this.columna, 'Semantico', 'Exceso de parametros especificados para la funcion ');
+                    else
+                        throw new Error_(this.linea, this.columna, 'Semantico', 'Faltan parametros ');
                 }
+                //Validar que los parametros reciban expresiones correctas
+                for(let i = 0; i < this.parametros.length; i++){
+                    const value = this.parametros[i].execute(entorno);
+                    let variable : any;
+                    variable = func.parametros![i];
+                    if(variable.tipo instanceof AccesoTipoType){
+                        let v = variable.tipo.execute(entorno);
+                        if(value.tipo == v.tipo){
+                            newEnv.guardarVariable(func.parametros![i].id, value.value, value.tipo, true);
+                        }else{
+                            throw new Error_(this.linea, this.columna, 'Semantico', 'Tipos incompatibles ' + ' valor no asignable a ' +  v.id);
+                        }                        
+                    }else{
+                        if(Tipo[value.tipo] == Tipo[variable.tipo]){
+                            newEnv.guardarVariable(func.parametros![i].id, value.value, value.tipo, true);
+                        }else{
+                            throw new Error_(this.linea, this.columna, 'Semantico', 'Tipos incompatibles ' + Tipo[value.tipo] + ' no asignable a ' +  Tipo[variable.tipo]);
+                        }
+                    }
+                }                
             }
+            newEnv.cantidadFunciones++;
             const instr = func.code.execute(newEnv);
             newEnv.cantidadFunciones--;
             //TODO validar que el tipo de retorno se pueda operar
