@@ -26,11 +26,11 @@ export class Push extends Instruction{
         if(this.accesos != null){
             let arreglo = this.accesos.execute(environment);
             if(arreglo == null || arreglo == undefined){
-                return; //error
+                throw new Error_(this.line, this.column, 'Semantico', ' Indice indefinido ' );
             }
 
             if(arreglo.tipo != Tipo.ARRAY){
-                return; //error
+                throw new Error_(this.line, this.column, 'Semantico', ' PUSH no ejecutable a valor ' + Tipo[arreglo.tipo] );
             }
             const valor = this.value.execute(environment);
             arreglo.value.push(valor);
@@ -38,11 +38,10 @@ export class Push extends Instruction{
             let arreglo : any;
             arreglo = environment.getVariable(this.id);
             if(arreglo == null || arreglo == undefined){
-                return; //error
+                throw new Error_(this.line, this.column, 'Semantico', ' Indice indefinido ' );
             }
-
             if(arreglo.tipo != Tipo.ARRAY){
-                return; //error
+                throw new Error_(this.line, this.column, 'Semantico', ' PUSH no ejecutable a valor ' + Tipo[arreglo.tipo] );
             }
             const valor = this.value.execute(environment);
             arreglo.valor.push(valor);
