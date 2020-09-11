@@ -7,10 +7,10 @@ import { Error_ } from "../Error/Error";
 
 export class Declaration extends Instruction{
 
-    private id : string;
-    private value : Expresion | null;
-    private variable : boolean;
-    private tipo : Tipo;
+    public id : string;
+    public value : Expresion | null;
+    public variable : boolean;
+    public tipo : Tipo;
 
     constructor(id: string, value : Expresion | null,  variable : boolean ,tipo : Tipo , linea : number, columna: number){
         super(linea, columna);

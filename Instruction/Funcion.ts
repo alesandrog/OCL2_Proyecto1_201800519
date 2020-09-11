@@ -12,7 +12,6 @@ export class Funcion extends Instruction{
     }
 
     public execute(entorno : Entorno) {
-        //TODO validar tipo y retorno
         entorno.guardarFuncion(this.id, this);
     }
 }

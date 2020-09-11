@@ -27,6 +27,5 @@ export class DeclaracionType extends Instruction{
             val.execute(entorno);
         }
         entorno.guardarTipo(this.id , this.atributos, false);
-        console.log(this);
     }    
 }
