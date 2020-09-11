@@ -11,5 +11,5 @@ export enum Tipo{
 
 export type Retorno ={
     value : any,
-    tipo : Tipo
+    tipo : Tipo | number
 }

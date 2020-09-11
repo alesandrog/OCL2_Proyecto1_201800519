@@ -26,8 +26,6 @@ export class Return extends Instruction{
             //Return con expresion
             if(this.exp != null && this.exp != undefined){
                 const val = this.exp.execute(environment);
-                //let res = { value : val.value , tipo : val.tipo};
-                //return res;
                 this.result = { value : val.value , tipo: val.tipo };
                 return this;
             }else{
