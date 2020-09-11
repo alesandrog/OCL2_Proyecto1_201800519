@@ -2,26 +2,31 @@ import { Simbolo } from "./Simbolo";
 import { Tipo } from "../Abstract/Retorno";
 import { Funcion } from "../Instruction/Funcion";
 import { SimboloArreglo } from "./SimboloArreglo";
+import { Error_ } from "../Error/Error";
 //importar funciones
 
 export class Entorno{
     
-    private variables : Map<string, Simbolo>;
+    public variables : Map<string, Simbolo>;
+    public tiposUsuario : Map<string, Simbolo>;
     private funciones : Map<string , Funcion>;
     public cantidadCiclos : number;
     public cantidadFunciones : number;
+    public indiceTipos : number;
     //map de funciones
 
     constructor(public anterior : Entorno | null){
         this.variables = new Map();
         this.funciones = new Map();
+        this.tiposUsuario = new Map();
         this.cantidadCiclos = 0;
         this.cantidadFunciones = 0;
+        this.indiceTipos = 8;
         //inicializar map de funciones
     }
 
     //TODO errores cuando no existan funciones
-    public guardarVariable(id: string, valor: any, tipo:Tipo, variable:boolean ){
+    public guardarVariable(id: string, valor: any, tipo:Tipo | number, variable:boolean ){
         let env : Entorno | null = this;
         while(env != null){
             if(env.variables.has(id)){
@@ -33,7 +38,31 @@ export class Entorno{
         this.variables.set(id, new Simbolo(valor, id, tipo, variable));
     }
 
-    public guardarArreglo(id: string, valor: any, tipo:Tipo, variable:boolean, dimension : number, tipoExp : Tipo ){
+    public guardarTipo(id: string, valor: any, variable:boolean ){
+        let env : Entorno | null = this;
+        while(env != null){
+            if(env.tiposUsuario.has(id)){
+                throw new Error_(0, 0, 'Semantico', 'Tipo '+ id + ' ya se encuentra definido ' );
+            }
+            env = env.anterior;
+        }
+        this.tiposUsuario.set(id, new Simbolo(valor, id, this.indiceTipos, variable));
+        this.indiceTipos++;
+    }
+
+    public getTipo(id: string) : Simbolo | undefined | null{
+        let env : Entorno | null = this;
+        while(env != null){
+            if(env.tiposUsuario.has(id)){
+                return env.tiposUsuario.get(id);
+            }
+            env = env.anterior;
+        }
+        return null;
+    }
+
+
+    public guardarArreglo(id: string, valor: any, tipo:Tipo | number, variable:boolean, dimension : number, tipoExp : Tipo ){
         let env : Entorno | null = this;
         while(env != null){
             if(env.variables.has(id)){
@@ -60,10 +89,7 @@ export class Entorno{
         let env : Entorno | null = this;
         while(env != null){
             if(env.funciones.has(id)){
-                //env.variables.set(id, new Simbolo(valor, id, tipo));
-                //throw error
-                //TODO error cuando existe la funcion
-                return;
+                throw new Error_(0, 0, 'Semantico', 'Funcion '+ id + ' ya se encuentra definida ' );
             }
             env = env.anterior;
         }
