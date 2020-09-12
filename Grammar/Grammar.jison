@@ -32,6 +32,7 @@
     const { Asignacion } = require('../Instruction/Asignacion');  
 
     const { Concatenacion } = require('../Instruction/Concatenacion');  
+    const { Incremento } = require('../Instruction/Incremento');      
 
     const { AsignacionArray } = require('../Instruction/AsignacionArray');    
     const { Console } = require('../Instruction/Console');
@@ -232,6 +233,14 @@ instruccion
     {
         $$ = new Return(null , @1.first_line , @1.first_column);
     }
+    | 'ID' '++'
+    {
+        $$ = new Incremento( $1 , $2 , @1.first_line , @1.first_column);
+    }
+    | 'ID' '--'
+    {
+        $$ = new Incremento( $1 , $2 , @1.first_line , @1.first_column);
+    }    
     | error  { 
     let error_sintactico = new Error_(this._$.first_line, this._$.first_column, 'Sintactico', yytext);
     errores.push(error_sintactico);
