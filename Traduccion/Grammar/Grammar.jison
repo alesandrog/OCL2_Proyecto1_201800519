@@ -155,6 +155,9 @@ instruccion
     | funcion
     {
         console.log($1.traduccion);
+        for(let i = ListaInstrucciones.length -1; i >= 0; i--){
+            console.log(ListaInstrucciones[i]);
+        }
     }
     | 'GRAFICAR' '(' ')'
     {
@@ -276,14 +279,14 @@ asignacion
 
 //Funcion Global
 funcion
-    : 'FUNCTION' idenPadre '('  ')'  '{' InstruccionesFun '}' 
+    : 'FUNCTION' idFuncion '(' parametrosFuncion ')' tipoFuncion  '{' InstruccionesFun '}' 
     {
-        var trad = `function ${$2.id}() { \n ${$6.traduccion}\n }`;
+        var trad = `function ${$2.id}() { \n ${$8.traduccion}\n }`;
         $$ = { traduccion: trad };
-    } 
+    }
 ;
 
-idenPadre
+idFuncion
     : 'ID'
     {
         $$ = {
@@ -292,6 +295,17 @@ idenPadre
         };
     }       
 ;
+
+parametrosFuncion
+    : parametros { $$ = { traduccion : " " }; }
+    | { $$ = { traduccion : " " }; }
+;
+
+tipoFuncion
+    : ':' tipo { $$ = { traduccion : " " }; }
+    | { $$ = { traduccion : " " }; }
+;
+
 
 InstruccionesFun
     : instrFor InstruccionesFun
@@ -309,8 +323,14 @@ instrFor
     { 
         var pila = eval('$$');
         var tope = pila.length - 1;
+        console.log("ando en decla");
+        console.log(pila);
         if(pila[tope - 1] == "{"){
-        $$ = { padre : pila[pila.length - 5].id , traduccion : $1.traduccion  }; 
+        console.log(pila[tope - 4]);            
+        console.log(pila[tope - 5]);            
+        console.log(pila[tope - 6].id);
+        console.log(pila[tope - 7]);
+        $$ = { padre : pila[tope - 6].id , traduccion : $1.traduccion  }; 
         }else{
         console.log("else decla");
         console.log(pila);
@@ -331,21 +351,24 @@ instrFor
 ;
 
 funcionFun
-    : 'FUNCTION' idFunAnid '('  ')' '{' InstruccionesFun '}' 
+    : 'FUNCTION' idFunAnid '(' parametrosFuncion ')' tipoFuncion  '{' InstruccionesFun '}'
     {
-        var t = `function ${$2.id} () { \n ${$6.traduccion} \n}`;
-        //pushear a map traducidas
-        //agregar a funciones pendientes
+        var t = `function ${$2.id} () { \n ${$8.traduccion} \n}`;
+        ListaInstrucciones.push(t);
+
         $$ = { traduccion : "" };
     } 
 ;
 idFunAnid
     : 'ID'
     {
+        //pushear a map traducidas
         var pila = eval('$$');
+                console.log("ando en funcion");
+        console.log(pila);
         var tope = pila.length - 1;
         if(pila[tope - 2] == '{'){
-            $$ = { padre : pila[tope - 5].id , id: pila[tope - 5].id + `_${$1}`  }; 
+            $$ = { padre : pila[tope - 6].id , id: pila[tope - 6].id + `_${$1}`  }; 
         }else{
             $$ = { padre : pila[tope - 2].padre , id: pila[tope - 2].padre + "_" + $1 }; 
         }
