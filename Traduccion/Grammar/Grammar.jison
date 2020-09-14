@@ -1,15 +1,11 @@
 %{
     const { MapTraducidos } = require('../MapTraducidos');
     const { ListaInstrucciones } = require('../ListaInstrucciones');    
+    const { ListaGlobales } = require('../ListaGlobales');    
 
 
 %}
-/*
-HijosFun
-    : InstruccionesFun HijosFun
-    | funcionFun HijosFun
-;
-*/
+
 %lex
 %options case-sensitive
 entero  [0-9]+
@@ -154,6 +150,9 @@ instruccion
     | asignacion ';'
     | funcion
     {
+        for(const def of ListaGlobales){
+            console.log(def);
+        }
         console.log($1.traduccion);
         for(let i = ListaInstrucciones.length -1; i >= 0; i--){
             console.log(ListaInstrucciones[i]);
@@ -274,7 +273,15 @@ asignacion
 ;
 
 
-/*-----------------------------------------FUNCIONES------------------------------------------------*/
+/*
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+///////////////////////////////////////                                 ////////////////////////////////////////////////////////////////
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\             FUNCIONES            \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+///////////////////////////////////////                                 ////////////////////////////////////////////////////////////////
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+*/
 
 
 //Funcion Global
@@ -296,6 +303,7 @@ idFuncion
     }       
 ;
 
+
 parametrosFuncion
     : parametros { $$ = { traduccion : " " }; }
     | { $$ = { traduccion : " " }; }
@@ -308,7 +316,7 @@ tipoFuncion
 
 
 InstruccionesFun
-    : instrFor InstruccionesFun
+    : instrFun InstruccionesFun
     {
         $$ = { traduccion : $1.traduccion + "\n" + $2.traduccion };
     } 
@@ -318,22 +326,14 @@ InstruccionesFun
     }
 ;
 
-instrFor
-    : declaracion
+instrFun
+    : declaracionFun
     { 
         var pila = eval('$$');
         var tope = pila.length - 1;
-        console.log("ando en decla");
-        console.log(pila);
         if(pila[tope - 1] == "{"){
-        console.log(pila[tope - 4]);            
-        console.log(pila[tope - 5]);            
-        console.log(pila[tope - 6].id);
-        console.log(pila[tope - 7]);
         $$ = { padre : pila[tope - 6].id , traduccion : $1.traduccion  }; 
         }else{
-        console.log("else decla");
-        console.log(pila);
         $$ = { padre : pila[tope - 1].padre , traduccion : $1.traduccion }; 
         }
     }
@@ -364,8 +364,6 @@ idFunAnid
     {
         //pushear a map traducidas
         var pila = eval('$$');
-                console.log("ando en funcion");
-        console.log(pila);
         var tope = pila.length - 1;
         if(pila[tope - 2] == '{'){
             $$ = { padre : pila[tope - 6].id , id: pila[tope - 6].id + `_${$1}`  }; 
@@ -374,6 +372,63 @@ idFunAnid
         }
     }
 ;
+
+
+
+
+declaracionFun
+    : 'LET'   'ID' ':' tipo corchetes '=' Expr ';'
+    { 
+    }
+    | 'LET'   'ID' ':' tipo '=' '{' atributosType '}'
+    { 
+    }    
+    | 'LET'   'ID' ':' tipo  corchetes ';'
+    { 
+    }        
+    | 'LET'   'ID' ':' tipo '=' Expr ';'
+    { 
+    }
+    | 'LET'   'ID' ':' tipo ';'
+    { 
+    }   
+    | 'LET'   idDeclaracion  '=' Expr ';'
+    {
+        var t =  `let ${$2.id} = ${$4};`
+        ListaGlobales.push(t);
+        $$ = { traduccion : ""};
+    }    
+    | 'LET' 'ID' ';'
+    {
+    }
+    | 'CONST' 'ID' ':' tipo corchetes '=' Expr ';'
+    { 
+    }    
+    | 'CONST' 'ID' ':' tipo '=' Expr ';'
+    { 
+    }
+    | 'CONST' 'ID' '=' Expr ';'
+    { 
+    }
+;
+
+idDeclaracion
+     : 'ID'
+    {
+        //pushear a map traducidas
+        var pila = eval('$$');
+        var tope = pila.length - 1;
+        if(pila[tope - 2] == '{'){
+            MapTraducidos.set( $1 , pila[tope - 7].id + `_${$1}`);
+            $$ = { padre : pila[tope - 7].id , id: pila[tope - 7].id + `_${$1}`  }; 
+        }else{
+            MapTraducidos.set( $1 , pila[tope - 2].padre + `_${$1}`);
+            $$ = { padre : pila[tope - 2].padre , id: pila[tope - 2].padre + "_" + $1 }; 
+        }
+    }
+;
+
+
 parametros
     : parametros ',' parametro
     {
@@ -388,6 +443,19 @@ parametro
     {
     }
 ;
+
+
+
+/*
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+///////////////////////////////////////                                 ////////////////////////////////////////////////////////////////
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\          EXPRESIONES             \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+///////////////////////////////////////                                 ////////////////////////////////////////////////////////////////
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+*/
+
 
 
 
