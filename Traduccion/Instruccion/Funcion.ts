@@ -26,9 +26,7 @@ export class Funcion extends Instruccion{
     }
 
     public traducir(entorno : Entorno) : any {
-
         if(this.entorno == ""){ //es una global
-
         //PASO 1> Llenar el map de traducidos y el map de accesos
         for(let i = this.anidadas.length -1; i >= 0; i--){
             MapTraducidos.set(this.anidadas[i].id , `${this.anidadas[i].entorno}_${this.anidadas[i].id}`); 
@@ -39,8 +37,7 @@ export class Funcion extends Instruccion{
         let code = "";
         let env = new Entorno(entorno);
         for(const instr of this.instrucciones){
-            code += instr.traducir(env) + "\n";
-            
+            code += instr.traducir(env) + "\n";            
         }
         let funcGlobal = `function ${this.entorno}${this.id} ${this.tipo} ( ${this.parametros} ) { \n${code}\n}`;
 
@@ -54,7 +51,6 @@ export class Funcion extends Instruccion{
         }
         return `${funcGlobal}\n${funcAnidadas}\n`;
         }else{ //es una anidada
-            console.log(this);
             //PASO 1 > Buscar el entorno padre y llenar el nuevo entorno a partir de el
             const padre : Entorno = MapEntornos.get(this.entorno);
             let env = new Entorno(padre);

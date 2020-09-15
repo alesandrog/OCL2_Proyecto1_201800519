@@ -1,9 +1,21 @@
 %{
-    const { MapTraducidos } = require('../MapTraducidos');
     const { ListaInstrucciones } = require('../ListaInstrucciones');    
-    const { ListaGlobales } = require('../ListaGlobales');    
+    const { ListaGlobales } = require('../ListaGlobales');        
+
+    /*----------------------------------------------- EXPRESIONES --------------------------------------------------------------*/
+    const { ExpresionBinaria } = require('../Expresion/ExpresionBinaria');
+    const { Literal } = require('../Expresion/Literal');
+    const { ExpresionUnaria } = require('../Expresion/ExpresionUnaria');
 
 
+
+    /*----------------------------------------------- INSTRUCCIONES --------------------------------------------------------------*/
+    const { Declaracion } = require('../Instruccion/Declaracion');
+    const { Asignacion } = require('../Instruccion/Asignacion');   
+    const { Funcion } = require('../Instruccion/Funcion'); 
+  
+
+    let funcionesAnidadas = [];
 %}
 
 %lex
@@ -150,13 +162,7 @@ instruccion
     | asignacion ';'
     | funcion
     {
-        for(const def of ListaGlobales){
-            console.log(def);
-        }
-        console.log($1.traduccion);
-        for(let i = ListaInstrucciones.length -1; i >= 0; i--){
-            console.log(ListaInstrucciones[i]);
-        }
+
     }
     | 'GRAFICAR' '(' ')'
     {
@@ -196,45 +202,54 @@ instruccion
 declaracion
     : 'LET'   'ID' ':' tipo corchetes '=' Expr ';'
     { 
+        $$ = new Declaracion($2, `:${$4}${$5}`, "let", $7 );
     }
     | 'LET'   'ID' ':' tipo '=' '{' atributosType '}'
     { 
+//        $$ = new Declaracion($2, "", "", "let", $4 );
     }    
     | 'LET'   'ID' ':' tipo  corchetes ';'
     { 
+        $$ = new Declaracion($2, `:${$4}${$5}`, "let", null );
     }        
     | 'LET'   'ID' ':' tipo '=' Expr ';'
     { 
+        $$ = new Declaracion($2, `:${$4}`, "let", $6 );
     }
     | 'LET'   'ID' ':' tipo ';'
     { 
+        $$ = new Declaracion($2, `:${$4}`, "let", null );
     }   
     | 'LET'   'ID'  '=' Expr ';'
     {
-        $$ = { traduccion : `let ${$2} = ${$4};` };
+        $$ = new Declaracion($2, "", "let", $4 );
     }    
     | 'LET' 'ID' ';'
     {
+        $$ = new Declaracion($2, "", "let", null );
     }
     | 'CONST' 'ID' ':' tipo corchetes '=' Expr ';'
     { 
+        $$ = new Declaracion($2, `:${$4}${$5}`, "const", $7 );
     }    
     | 'CONST' 'ID' ':' tipo '=' Expr ';'
     { 
+        $$ = new Declaracion($2, `:${$4}`, "const", $6 );
     }
     | 'CONST' 'ID' '=' Expr ';'
     { 
-
+        $$ = new Declaracion($2, "", "const", $4 );
     }
 ;
 
 corchetes
     : corchetes '[' ']'
     {
-
+        $$ = $1 + "[]";
     }
     | '[' ']'
     {
+        $$ = "[]";
     }
 ;
 
@@ -260,15 +275,13 @@ tipo
 
 
 asignacion    
-    : 'ID' accesosCorchetes '=' Expr 
+    : 'ID' '+=' Expr 
     {
-
-    }
-    | 'ID' '+=' Expr 
-    {
+        $$ = new Asignacion($1 , $3, $2);
     }    
     | 'ID' '=' Expr 
     {
+        $$ = new Asignacion($1 , $3, $2);
     }
 ;
 
@@ -288,8 +301,8 @@ asignacion
 funcion
     : 'FUNCTION' idFuncion '(' parametrosFuncion ')' tipoFuncion  '{' InstruccionesFun '}' 
     {
-        var trad = `function ${$2.id}() { \n ${$8.traduccion}\n }`;
-        $$ = { traduccion: trad };
+        $$ = new Funcion($2.id, $4, $6, $8, "", funcionesAnidadas );
+        funcionesAnidadas = [];
     }
 ;
 
@@ -305,58 +318,50 @@ idFuncion
 
 
 parametrosFuncion
-    : parametros { $$ = { traduccion : " " }; }
-    | { $$ = { traduccion : " " }; }
+    : parametros 
+    | { $$ = ""; }
 ;
 
 tipoFuncion
-    : ':' tipo { $$ = { traduccion : " " }; }
-    | { $$ = { traduccion : " " }; }
+    : ':' tipo { $$ = `:${$2}`; }
+    | { $$ = ""; }
 ;
 
 
 InstruccionesFun
-    : instrFun InstruccionesFun
+    : InstruccionesFun instrFun
     {
-        $$ = { traduccion : $1.traduccion + "\n" + $2.traduccion };
+        if($2 instanceof Funcion){
+            funcionesAnidadas.push($2);
+        }else{
+        $1.push($2);
+        }
+        $$ = $1;
     } 
-    | 
-    {
-        $$ = { traduccion : "" };
+    | instrFun
+    {        
+        $$ = [$1];
     }
 ;
 
 instrFun
-    : declaracionFun
+    : declaracion
     { 
-        var pila = eval('$$');
-        var tope = pila.length - 1;
-        if(pila[tope - 1] == "{"){
-        $$ = { padre : pila[tope - 6].id , traduccion : $1.traduccion  }; 
-        }else{
-        $$ = { padre : pila[tope - 1].padre , traduccion : $1.traduccion }; 
-        }
-    }
-    | asignacion  
-    { 
-        $$ = { padre : "piola asig" };
+       $$ = $1;
     }
     | funcionFun 
+    | asignacion ';' 
     { 
-        var pila = eval('$$');
-        var tope = pila.length - 1;
-        $$ = { padre : pila[tope - 1].padre ,  traduccion : $1.traduccion }; 
-
+       $$ = $1;
     }
 ;
+
+
 
 funcionFun
     : 'FUNCTION' idFunAnid '(' parametrosFuncion ')' tipoFuncion  '{' InstruccionesFun '}'
     {
-        var t = `function ${$2.id} () { \n ${$8.traduccion} \n}`;
-        ListaInstrucciones.push(t);
-
-        $$ = { traduccion : "" };
+        $$ = new Funcion($2.value, $4, $6, $8, $2.padre );
     } 
 ;
 idFunAnid
@@ -366,72 +371,20 @@ idFunAnid
         var pila = eval('$$');
         var tope = pila.length - 1;
         if(pila[tope - 2] == '{'){
-            $$ = { padre : pila[tope - 6].id , id: pila[tope - 6].id + `_${$1}`  }; 
+            $$ = { padre : pila[tope - 7].id, id: pila[tope - 7].id + `_${$1}` , value : $1  }; 
         }else{
-            $$ = { padre : pila[tope - 2].padre , id: pila[tope - 2].padre + "_" + $1 }; 
+            $$ = { padre : pila[tope - 8].id, id: pila[tope - 8].id + "_" + $1 , value : $1 }; 
         }
     }
 ;
 
 
-
-
-declaracionFun
-    : 'LET'   'ID' ':' tipo corchetes '=' Expr ';'
-    { 
-    }
-    | 'LET'   'ID' ':' tipo '=' '{' atributosType '}'
-    { 
-    }    
-    | 'LET'   'ID' ':' tipo  corchetes ';'
-    { 
-    }        
-    | 'LET'   'ID' ':' tipo '=' Expr ';'
-    { 
-    }
-    | 'LET'   'ID' ':' tipo ';'
-    { 
-    }   
-    | 'LET'   idDeclaracion  '=' Expr ';'
-    {
-        var t =  `let ${$2.id} = ${$4};`
-        ListaGlobales.push(t);
-        $$ = { traduccion : ""};
-    }    
-    | 'LET' 'ID' ';'
-    {
-    }
-    | 'CONST' 'ID' ':' tipo corchetes '=' Expr ';'
-    { 
-    }    
-    | 'CONST' 'ID' ':' tipo '=' Expr ';'
-    { 
-    }
-    | 'CONST' 'ID' '=' Expr ';'
-    { 
-    }
-;
-
-idDeclaracion
-     : 'ID'
-    {
-        //pushear a map traducidas
-        var pila = eval('$$');
-        var tope = pila.length - 1;
-        if(pila[tope - 2] == '{'){
-            MapTraducidos.set( $1 , pila[tope - 7].id + `_${$1}`);
-            $$ = { padre : pila[tope - 7].id , id: pila[tope - 7].id + `_${$1}`  }; 
-        }else{
-            MapTraducidos.set( $1 , pila[tope - 2].padre + `_${$1}`);
-            $$ = { padre : pila[tope - 2].padre , id: pila[tope - 2].padre + "_" + $1 }; 
-        }
-    }
-;
 
 
 parametros
     : parametros ',' parametro
     {
+        $$ = `${$1,$3}`;
     }    
     | parametro
     {
@@ -441,6 +394,7 @@ parametros
 parametro
     : 'ID' ':' tipo
     {
+        $$ = `${$1}:${$3}`;
     }
 ;
 
@@ -463,55 +417,55 @@ parametro
 Expr
     : Expr '+' Expr
     {
-        $$ = $1 + $2 + $3;
+        $$ = new ExpresionBinaria($1 , $3, $2);
     }       
     | Expr '-' Expr
     {
-        $$ = $1 + $2 + $3;
+        $$ = new ExpresionBinaria($1 , $3, $2);
     }
     | Expr '*' Expr
     { 
-        $$ = $1 + $2 + $3;
+        $$ = new ExpresionBinaria($1 , $3, $2);
     }       
     | Expr '/' Expr
     {
-        $$ = $1 + $2 + $3;
+        $$ = new ExpresionBinaria($1 , $3, $2);
     }
     | Expr '<' Expr
     {
-        $$ = $1 + $2 + $3;
+        $$ = new ExpresionBinaria($1 , $3, $2);
     }
     | Expr '<=' Expr
     {
-        $$ = $1 + $2 + $3;
+        $$ = new ExpresionBinaria($1 , $3, $2);
     }
     | Expr '>' Expr
     {
-        $$ = $1 + $2 + $3;
+        $$ = new ExpresionBinaria($1 , $3, $2);
     }
     | Expr '>=' Expr
     {
-        $$ = $1 + $2 + $3;
+        $$ = new ExpresionBinaria($1 , $3, $2);
     }
     | Expr '==' Expr
     {
-        $$ = $1 + $2 + $3;
+        $$ = new ExpresionBinaria($1 , $3, $2);
     }
     | Expr '!=' Expr
     {
-        $$ = $1 + $2 + $3;
+        $$ = new ExpresionBinaria($1 , $3, $2);
     }
     | Expr '&&' Expr
     {
-        $$ = $1 + $2 + $3;
+        $$ = new ExpresionBinaria($1 , $3, $2);
     }
     | Expr '||' Expr
     {
-        $$ = $1 + $2 + $3;
+        $$ = new ExpresionBinaria($1 , $3, $2);
     }
     | '!' Expr
     {
-        $$ = $1 + $2;
+        $$ = new ExpresionUnaria($2, $1);
     }            
     | F
     {
@@ -522,38 +476,39 @@ Expr
 
 F   : '(' Expr ')'
     { 
-        $$ = '('+ $2  +')';
+        $$ = new ExpresionUnaria($2, $1);
     }
     | 'DECIMAL'
     { 
-         $$ = $1;
+         $$ = new Literal($1);
     }
     | 'ENTERO'
     { 
-         $$ = $1
+         $$ = new Literal($1);
     }
     | 'CADENA'
     {
-         $$ = $1.replace(/\"/g,"");
+         $$ = new Literal($1.replace(/\"/g,""));        
     }
     | 'TRUE'
     { 
-        $$ = $1;
+         $$ = new Literal($1);
     }
     | 'FALSE'
     { 
-        $$ = $1;
+         $$ = new Literal($1);
     }      
     | 'ID' '++'
     {
-        $$ = $1 + "++";
-
+        let val = new Literal($1);
+        $$ = new ExpresionUnaria(val, $2);
     }
     | 'ID' '--'
     {
-        $$ = $1 + "--";
+        let val = new Literal($1);
+        $$ = new ExpresionUnaria(val, $2);
     }
     | 'ID' {
-         $$ = $1;
+         $$ = new Literal($1);
     }
 ;
