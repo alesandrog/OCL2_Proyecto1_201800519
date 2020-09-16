@@ -384,10 +384,11 @@ idFunAnid
 parametros
     : parametros ',' parametro
     {
-        $$ = `${$1,$3}`;
+        $$ = `${$1},${$3}`;
     }    
     | parametro
     {
+        $$ = $1;
     }    
 ;
 
