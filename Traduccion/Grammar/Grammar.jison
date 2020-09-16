@@ -13,7 +13,17 @@
     const { Declaracion } = require('../Instruccion/Declaracion');
     const { Asignacion } = require('../Instruccion/Asignacion');   
     const { Funcion } = require('../Instruccion/Funcion'); 
+    const { LlamadaFuncion } = require('../Instruccion/LlamadaFuncion'); 
   
+    /*--------------------------------------------- SENTENCIAS DE CONTROL --------------------------------------------------------------*/
+
+    const { BloqueInstrucciones } = require('../Instruccion/BloqueInstrucciones'); 
+    const { If } = require('../Instruccion/If'); 
+    const { While } = require('../Instruccion/While'); 
+    const { Switch } = require('../Instruccion/Switch');     
+    const { Case } = require('../Instruccion/Case'); 
+    const { SentenciaSalida } = require('../Instruccion/SentenciaSalida'); 
+
 
     let funcionesAnidadas = [];
 %}
@@ -122,8 +132,8 @@ cadena  (\"[^"]*\")
 ([a-zA-Z_])[a-zA-Z0-9_ñÑ]*	return 'ID';
 <<EOF>>		            return 'EOF'
 .   { 
-    let error_lexico = new Error_(yylloc.first_line, yylloc.first_column, 'Lexico', yytext);
-    errores.push(error_lexico);
+    //let error_lexico = new Error_(yylloc.first_line, yylloc.first_column, 'Lexico', yytext);
+    //errores.push(error_lexico);
     }
 
 /lex
@@ -159,8 +169,17 @@ Instrucciones
 
 instruccion
     : declaracion 
+    | If
+    | While
+    | DoWhile
+    | Switch    
+    | funcion    
+    | llamadaFuncion ';'
+    {
+        $1.puntoc = ";";
+        $$ = $1;
+    }
     | asignacion ';'
-    | funcion
     {
 
     }
@@ -170,27 +189,27 @@ instruccion
     }
     | 'BREAK' ';'
     {
-       // $$ = new Break(@1.first_line , @1.first_column);
+        $$ = new SentenciaSalida(2, null);
     }
     | 'CONTINUE' ';'
     {
-     //   $$ = new Continue(@1.first_line , @1.first_column);
+        $$ = new SentenciaSalida(3, null);
     }
     | 'RETURN' Expr ';'
     {
-     //   $$ = new Return($2 , @1.first_line , @1.first_column);
+        $$ = new SentenciaSalida(1, $2);
     }
     | 'RETURN' ';'
     {
-       // $$ = new Return(null , @1.first_line , @1.first_column);
+        $$ = new SentenciaSalida(1, null);
     }
-    | 'ID' '++'
+    | 'ID' '++' ';'
     {
-      //  $$ = new Incremento( $1 , $2 , @1.first_line , @1.first_column);
+         $$ = new Literal(`${$1}++;`);
     }
-    | 'ID' '--'
+    | 'ID' '--' ';'
     {
-     //   $$ = new Incremento( $1 , $2 , @1.first_line , @1.first_column);
+         $$ = new Literal(`${$1}--;`);
     }    
     | error  { 
 //    let error_sintactico = new Error_(this._$.first_line, this._$.first_column, 'Sintactico', yytext);
@@ -285,6 +304,161 @@ asignacion
     }
 ;
 
+/*
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+///////////////////////////////////////                                 ////////////////////////////////////////////////////////////////
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\      SENTENCIAS DE CONTROL      \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+///////////////////////////////////////                                 ////////////////////////////////////////////////////////////////
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+*/
+
+
+
+If
+    : 'IF' '(' Expr ')' BloqueInstrucciones Else
+    {
+        $$ = new If($3, $5, $6);
+    }
+;
+
+Else
+    : 'ELSE' If
+    {
+        $$ = $2;
+    }
+    | 'ELSE' BloqueInstrucciones
+    {
+        $$ = $2;
+    }
+    | /* epsilon */ 
+    {
+        $$ = null;
+    }
+;
+
+While
+    : 'WHILE' '(' Expr ')' BloqueInstrucciones
+    {
+        $$ = new While( $3 , $5, 1);
+    }
+;
+
+DoWhile
+    : 'DO' BloqueInstrucciones 'WHILE' '(' Expr ')' 
+    {
+        $$ = new DoWhile( $5 , $2, 2);
+    }
+;
+
+Switch
+    : 'SWITCH' '(' Expr ')' '{' BloqueCase Default '}'
+    {
+        $$ = new Switch( $3 , $6 , $7);
+    }
+;
+
+BloqueCase
+    :  BloqueCase Case
+    {
+        $1.push($2);
+        $$ = $1;
+    }
+    |  Case
+    {
+        $$ = [$1];
+    }
+;
+
+Case 
+    : 'CASE' Expr ':' Instrucciones
+    {
+        $$ = new Case( $2 , $4);
+    }
+;
+
+Default 
+    : 'DEFAULT' ':' Instrucciones
+    {
+        $$ = $3;
+    }
+    | /* epsilon */
+    {
+        $$ = null;
+    }
+  ;
+
+/*
+For
+    : 'FOR' '(' declaracion Expr ';' asignacion ')' BloqueInstrucciones
+    { 
+        $$ = new For( $3, $4 , $6, $8 , @1.first_line, @1.first_column);
+    }    
+    | 'FOR' '(' declaracion Expr ';' Expr ')' BloqueInstrucciones
+    { 
+        $$ = new For( $3, $4 , $6, $8 , @1.first_line, @1.first_column);
+    }
+    | 'FOR' '(' asignacion Expr ';' asignacion ')' BloqueInstrucciones
+    { 
+        $$ = new For( $3, $4 , $6, $8 , @1.first_line, @1.first_column);
+    }       
+    | 'FOR' '(' asignacion Expr ';' Expr ')' BloqueInstrucciones
+    { 
+        $$ = new For( $3, $4 , $6, $8 , @1.first_line, @1.first_column);
+    }       
+;
+*/
+
+/*
+ForIn
+    : 'FOR' '(' declaracion_for 'IN' Expr ')' BloqueInstrucciones
+    {
+        $$ = new ForIn( $3 , $5, $7, @1.first_line , @1.first_column);
+    }
+;
+
+ForOf
+    : 'FOR' '(' declaracion_for 'OF' Expr ')' BloqueInstrucciones
+    {
+        $$ = new ForOf( $3 , $5, $7, @1.first_line , @1.first_column);
+    }
+;
+*/
+
+/*
+declaracion_for
+    : 'LET'   'ID' ':' tipo 
+    { 
+        $$ = new Declaration( $2 , null , true, $4,  @1.first_line , @1.first_column);
+    }
+    | 'LET'   'ID'
+    { 
+        $$ = new Declaration( $2 , null , true, Tipo.NULL ,  @1.first_line , @1.first_column);
+    }
+    | 'CONST'   'ID' ':' tipo
+    { 
+        $$ = new Declaration( $2 , null , true, $4,  @1.first_line , @1.first_column);
+    }
+    | 'CONST'   'ID'  
+    { 
+        $$ = new Declaration( $2 , null , true, Tipo.NULL ,  @1.first_line , @1.first_column);
+    }
+;
+*/
+
+BloqueInstrucciones
+    : '{'  Instrucciones '}'
+    {
+        $$ = new BloqueInstrucciones($2);
+    } 
+    | '{' '}'
+    {
+        $$ = null;
+    }
+  ; 
+
+
 
 /*
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -351,8 +525,14 @@ instrFun
     }
     | funcionFun 
     | asignacion ';' 
+    | If
+    | While
+    | DoWhile
+    | Switch
+    | llamadaFuncion ';'
     { 
-       $$ = $1;
+        $1.puntoc = ";";
+        $$ = $1;
     }
 ;
 
@@ -398,6 +578,33 @@ parametro
         $$ = `${$1}:${$3}`;
     }
 ;
+
+
+llamadaFuncion
+    : 'ID' '(' paramsExp ')' 
+    {
+        $$ = new LlamadaFuncion($1 , $3);
+    }
+    | 'ID' '('  ')' 
+    {
+        $$ = new LlamadaFuncion($1 , null);
+    }
+    ;
+
+
+paramsExp
+    : paramsExp ',' Expr
+    {
+        $1.push($3);
+        $$ = $1;
+    }
+    | Expr
+    {
+        $$ = [$1];
+    }
+;
+
+
 
 
 
@@ -498,7 +705,8 @@ F   : '(' Expr ')'
     | 'FALSE'
     { 
          $$ = new Literal($1);
-    }      
+    }
+    | llamadaFuncion      
     | 'ID' '++'
     {
         let val = new Literal($1);
