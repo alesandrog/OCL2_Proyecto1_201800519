@@ -8,6 +8,7 @@ export enum OperacionesAritmeticas {
   RESTA,
   MULTIPLICACION,
   DIVISION,
+  POTENCIA
 }
 
 export class ExpresionAritmetica extends Expresion {
@@ -66,7 +67,17 @@ export class ExpresionAritmetica extends Expresion {
           "No se puede operar: " + Tipo[izq.tipo] + " * " + Tipo[der.tipo]
         );
       result = { value: izq.value * der.value, tipo: Tipo.NUMBER };
-    } else {
+    } else if (this.tipo == OperacionesAritmeticas.POTENCIA) {
+      if (tipoDominante != Tipo.NUMBER)
+        throw new Error_(
+          this.linea,
+          this.columna,
+          "Semantico",
+          "No se puede operar: " + Tipo[izq.tipo] + " * " + Tipo[der.tipo]
+        );
+      result = { value: izq.value ** der.value, tipo: Tipo.NUMBER };
+    }
+     else {
       if (der.value == 0) {
         throw new Error_(
           this.linea,

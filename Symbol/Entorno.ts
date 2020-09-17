@@ -28,6 +28,13 @@ export class Entorno{
     //TODO errores cuando no existan funciones
     public guardarVariable(id: string, valor: any, tipo:Tipo | number, variable:boolean ){
         let env : Entorno | null = this;
+        if(this.variables.has(id))
+            return; //error variable ya declarada en el entorno
+        this.variables.set(id, new Simbolo(valor, id, tipo, variable));
+    }
+
+    public actualizarVariable(id: string, valor: any, tipo:Tipo | number, variable:boolean ){
+        let env : Entorno | null = this;
         while(env != null){
             if(env.variables.has(id)){
                 env.variables.set(id, new Simbolo(valor, id, tipo, variable));
@@ -37,6 +44,8 @@ export class Entorno{
         }
         this.variables.set(id, new Simbolo(valor, id, tipo, variable));
     }
+
+
 
     public guardarTipo(id: string, valor: any, variable:boolean ){
         let env : Entorno | null = this;

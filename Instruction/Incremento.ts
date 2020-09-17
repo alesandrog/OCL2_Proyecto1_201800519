@@ -32,7 +32,7 @@ export class Incremento extends Instruction{
                     }else{
                         res = variable.valor - 1;
                     }
-                    entorno.guardarVariable(this.id, res, Tipo.NUMBER, true);
+                    entorno.actualizarVariable(this.id, res, Tipo.NUMBER, true);
 
                 }else{
                     throw new Error_(this.linea, this.columna, 'Semantico', 'Variable ' + this.id +  ' no esta inicializada');
