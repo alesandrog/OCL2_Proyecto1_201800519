@@ -16,12 +16,12 @@ export const Tipos = [
 /* VOID*/        Tipo.ERR,     Tipo.STRING,   Tipo.NULL,     Tipo.NULL,   Tipo.NULL,    Tipo.ERR,     Tipo.ERR
             ],
             [
-/* TYPE */       Tipo.ERR,     Tipo.STRING,   Tipo.NULL,     Tipo.NULL,   Tipo.ARRAY,   Tipo.ERR,     Tipo.ERR
+/* TYPE */       Tipo.ERR,     Tipo.STRING,   Tipo.NULL,     Tipo.NULL,   Tipo.ARRAY,   Tipo.ERR,     Tipo.NULL
             ],
             [
-/* ARRAY */      Tipo.ERR,     Tipo.STRING,   Tipo.NULL,     Tipo.NULL,   Tipo.ARRAY,   Tipo.ARRAY,   Tipo.ERR
+/* ARRAY */      Tipo.ERR,     Tipo.STRING,   Tipo.NULL,     Tipo.NULL,   Tipo.ARRAY,   Tipo.ARRAY,   Tipo.NULL
             ],
             [ 
-/* NULL */       Tipo.ERR,     Tipo.STRING,   Tipo.NULL,     Tipo.NULL,   Tipo.ARRAY,   Tipo.ERR,     Tipo.ERR
+/* NULL */       Tipo.ERR,     Tipo.STRING,   Tipo.BOOLEAN,     Tipo.NULL,   Tipo.ARRAY,   Tipo.ERR,     Tipo.NULL
             ]            
 ];
