@@ -36,26 +36,38 @@ export class LlamadaFuncion extends Instruction{
                         variable = func.parametros![i];
                         if(variable.tipo instanceof AccesoTipoType){
                             let v = variable.tipo.execute(entorno);
-                            if(value.tipo == v.tipo){
-                                newEnv.actualizarVariable(func.parametros![i].id, value.value, value.tipo, true);
+                            if(value.tipo == v.tipo || value.tipo == Tipo.NULL){
+                                newEnv.guardarVariable(func.parametros![i].id, value.value, v.tipo, true);
                             }else{
                                 throw new Error_(this.linea, this.columna, 'Semantico', 'Tipos incompatibles ' + ' valor no asignable a ' +  v.id);
                             }                        
                         }else{
-                            if(Tipo[value.tipo] == Tipo[variable.tipo]){
-                                newEnv.actualizarVariable(func.parametros![i].id, value.value, value.tipo, true);
+                            if(variable.tipo < 8){
+                                if(Tipo[value.tipo] == Tipo[variable.tipo]){
+                                    newEnv.guardarVariable(func.parametros![i].id, value.value, value.tipo, true);
+                                }else{
+                                    throw new Error_(this.linea, this.columna, 'Semantico', 'Tipos incompatibles ' + Tipo[value.tipo] + ' no asignable a ' +  Tipo[variable.tipo]);
+                                }
                             }else{
-                                throw new Error_(this.linea, this.columna, 'Semantico', 'Tipos incompatibles ' + Tipo[value.tipo] + ' no asignable a ' +  Tipo[variable.tipo]);
+                                if(value.tipo == variable.tipo || value.tipo == Tipo.NULL){
+                                    newEnv.guardarVariable(func.parametros![i].id, value.value, variable.tipo, true);
+                                }else{
+                                    throw new Error_(this.linea, this.columna, 'Semantico', 'Tipos incompatibles ' + Tipo[value.tipo] + ' no asignable a ' +  Tipo[variable.tipo]);
+                                }                                
                             }
+
                         }
                     }                
                 }
                 newEnv.cantidadFunciones++;
-                const instr = func.code.execute(newEnv);
-                newEnv.cantidadFunciones--;
-                //TODO validar que el tipo de retorno se pueda operar
-                
-                //Verificar si existe return
+                for(const instr of func.code){
+                    try {
+                        if(instr instanceof Instruction){
+                            const element = instr.execute(newEnv);
+                            if(element != undefined || element != null)
+                                return element;
+
+                                            //Verificar si existe return
                 if(instr instanceof Return){
                     //Verificar si la funcion tiene tipo explicito
                     if(func.tipo != Tipo.NULL){
@@ -70,6 +82,17 @@ export class LlamadaFuncion extends Instruction{
                         return instr.result;
                     }
                 }
+                            
+                        }else{
+                            //errores.push(new Error_(this.linea, this.columna, 'Sintactico', 'Caracter inesperado: ' + instr));
+                            throw new Error_(this.linea, this.columna, 'Sintactico', 'Caracter inesperado: ' + instr);
+                        }                
+                    } catch (error) {
+                        errores.push(error);
+                    }
+                }
+                newEnv.cantidadFunciones--;
+                //TODO validar que el tipo de retorno se pueda operar
             }else{
                 throw new Error_(this.linea, this.columna, ' Semantico ', this.id + ' no esta definida ' );
             }
