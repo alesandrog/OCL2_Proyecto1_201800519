@@ -7,6 +7,7 @@ import { AccesoIndice } from "./AccesoIndice";
 import { Types } from "mysql";
 import { Type } from "../Instruction/Types";
 import { AccesoArray } from "./AccesoArray";
+import { Simbolo } from "../Symbol/Simbolo";
 
 export class AccesoTipoType extends Expresion{
 
@@ -20,7 +21,13 @@ export class AccesoTipoType extends Expresion{
     //TODO validar null y undefined, mensajes de error
 
     public execute(entorno : Entorno): any {
-        return entorno.getTipo(this.id);
+
+        const acceso = entorno.getTipo(this.id);
+        if(acceso != null || acceso != undefined)
+            return acceso;
         
+        if(this.id == entorno.typeTemporal)
+            return new Simbolo("", this.id, entorno.indiceTipos, true);
+        throw new Error_(this.linea, this.columna, 'Semantico', 'Tipo '+ this.id + ' no esta definido ' );  
     }
 }

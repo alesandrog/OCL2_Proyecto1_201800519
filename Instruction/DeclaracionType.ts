@@ -23,6 +23,7 @@ export class DeclaracionType extends Instruction{
 
     //Almacenar el tipo en el map
     public execute(entorno : Entorno){
+        entorno.typeTemporal = this.id;
         for(const val of this.atributos){
             val.execute(entorno);
         }

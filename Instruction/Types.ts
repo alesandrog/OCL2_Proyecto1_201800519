@@ -55,14 +55,21 @@ export class Type extends Instruction{
         //Verificar que la cantidad de atributos recibidos sea igual a la cantidad esperada
 
         if(arr.length != tipo.valor.length)
-            throw new Error_(this.linea, this.columna, 'Semantico', 'Atributos no coinciden con los definidos en ' + tipo.id);
-
+            throw new Error_(this.linea, this.columna, 'Semantico', 'Atributos no coinciden con los definidos en ' + tipo.id + " 1");
 
         //Comparar atributos recibidos con atributos definidos en el type
-       for(let i = 0; i < tipo.valor.length; i++)
-            if(tipo.valor[i].id != arr[i][0] || tipo.valor[i].tipo != arr[i][1].tipo)
-                throw new Error_(this.linea, this.columna, 'Semantico', 'Atributos no coinciden con los definidos en ' + tipo.id);
-        
+       for(let i = 0; i < tipo.valor.length; i++){
+        if(tipo.valor[i].id != arr[i][0] ){ //verificar que el parametro sea igual
+            throw new Error_(this.linea, this.columna, 'Semantico', 'Atributos no coinciden con los definidos en ' + tipo.id + " 2");
+        }
+        if(tipo.valor[i].tipo != arr[i][1].tipo){ //verificar que el tipo sea igual
+            if((tipo.valor[i].tipo > 7) && (arr[i][1].tipo == Tipo.NULL)){ //es una variable type y puede inicializarse en null
+                //se acepta
+            }else{
+                throw new Error_(this.linea, this.columna, 'Semantico', 'Atributos no coinciden con los definidos en ' + tipo.id + " 2");
+            }
+        }
+       }        
         entorno.guardarVariable(this.id, this.value, tipo.tipo, true);
     }    
 }
