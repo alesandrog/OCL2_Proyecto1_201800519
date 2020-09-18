@@ -64,16 +64,19 @@
 entero  [0-9]+
 decimal {entero}"."{entero}
 cadena  (\"[^"]*\")
+cadenasimple  (\'[^']*\')
 %%
 \s+                   /* skip whitespace */
 "//".*										// comentario simple línea
 [/][*][^*]*[*]+([^/*][^*]*[*]+)*[/]			// comentario multiple líneas
 
-{entero}                return 'ENTERO'
 {decimal}               return 'DECIMAL'
+{entero}                return 'ENTERO'
 {cadena}                return 'CADENA'
+{cadenasimple}          return 'CADENASIM'
 
 //Operaciones Aritmeticas
+"**"                     return '**'
 "*"                     return '*'
 "/"                     return '/'
 "+="                    return '+='
@@ -158,7 +161,7 @@ cadena  (\"[^"]*\")
 "string"                return 'STRING'
 "boolean"               return 'BOOLEAN'
 "type"                  return 'TYPE'
-
+"null"                  return 'NULL'
 
 ([a-zA-Z_])[a-zA-Z0-9_ñÑ]*	return 'ID';
 <<EOF>>		            return 'EOF'
@@ -175,6 +178,8 @@ cadena  (\"[^"]*\")
 %left '>=', '<=', '<', '>'
 %left '+' '-'
 %left '*' '/'
+%left '**'
+%left UMENOS
 %right '!'
 
 %start Init
@@ -233,26 +238,32 @@ instruccion
     {
         $$ = new Return(null , @1.first_line , @1.first_column);
     }
-    | 'ID' '++'
+    | 'ID' '++' ';'
     {
         $$ = new Incremento( $1 , $2 , @1.first_line , @1.first_column);
     }
-    | 'ID' '--'
+    | 'ID' '--' ';'
     {
         $$ = new Incremento( $1 , $2 , @1.first_line , @1.first_column);
     }    
     | error  { 
-    let error_sintactico = new Error_(this._$.first_line, this._$.first_column, 'Sintactico', yytext);
-    errores.push(error_sintactico);
+        var error_sin = new Error_(this._$.first_line, this._$.first_column, 'Sintactico', yytext);
+        errores.push(error_sin);
     }
 ;
 /*--------------------------------------Declaracion y Asignacion de variables----------------------------------*/
 
 declaracion
-    : 'LET'   'ID' ':' tipo corchetes '=' Expr ';'
+    : 'LET'   'ID' ':' tipo corchetes '='  Expr ';'
     { 
-        /* let arr : number[][] = [[5]];*/
+        /* let arr : number[][] = [[5]];*/        
         $$ = new DeclaracionArreglo( $2 , $7 , true, Tipo.ARRAY , $5, $4, @1.first_line , @1.first_column);
+    }
+    | 'LET'   'ID' ':' tipo corchetes '=' '[' ']' ';'
+    { 
+        let array = [];
+        let arr_vacio = new Arreglo2(array, @1.first_line, @1.first_column);
+        $$ = new DeclaracionArreglo( $2 , arr_vacio , true, Tipo.ARRAY , $5, $4, @1.first_line , @1.first_column);
     }
     | 'LET'   'ID' ':' tipo '=' '{' atributosType '}'
     { 
@@ -424,7 +435,7 @@ While
 ;
 
 DoWhile
-    : 'DO' BloqueInstrucciones 'WHILE' '(' Expr ')' 
+    : 'DO' BloqueInstrucciones 'WHILE' '(' Expr ')' ';'
     {
         $$ = new DoWhile( $5 , $2, @1.first_line , @1.first_column);
     }
@@ -472,7 +483,19 @@ For
     : 'FOR' '(' declaracion Expr ';' asignacion ')' BloqueInstrucciones
     { 
         $$ = new For( $3, $4 , $6, $8 , @1.first_line, @1.first_column);
-   }
+    }    
+    | 'FOR' '(' declaracion Expr ';' Expr ')' BloqueInstrucciones
+    { 
+        $$ = new For( $3, $4 , $6, $8 , @1.first_line, @1.first_column);
+    }
+/*    | 'FOR' '(' asignacion Expr ';' asignacion ')' BloqueInstrucciones
+    { 
+        $$ = new For( $3, $4 , $6, $8 , @1.first_line, @1.first_column);
+    }       
+    | 'FOR' '(' asignacion Expr ';' Expr ')' BloqueInstrucciones
+    { 
+        $$ = new For( $3, $4 , $6, $8 , @1.first_line, @1.first_column);
+    }       */
 ;
 
 
@@ -572,7 +595,16 @@ parametro
 
 /*----------------------------------------Expresiones Aritmeticas y Logicas--------------------------------------*/
 Expr
-    : Expr '+' Expr
+    : '-' Expr %prec UMENOS
+    {
+        var cero = new Literal(0, @1.first_line, @1.first_column, Tipo.NUMBER); 
+        $$ = new ExpresionAritmetica(cero, $2, OperacionesAritmeticas.RESTA, @1.first_line,@1.first_column);        
+    }
+    | Expr '**' Expr
+    { 
+        $$ = new ExpresionAritmetica($1, $3, OperacionesAritmeticas.POTENCIA, @1.first_line,@1.first_column);
+    }    
+    | Expr '+' Expr
     {
         $$ = new ExpresionAritmetica($1, $3, OperacionesAritmeticas.SUMA, @1.first_line,@1.first_column);
     }       
@@ -647,6 +679,10 @@ F   : '(' Expr ')'
     {
          $$ = new Literal($1.replace(/\"/g,""), @1.first_line, @1.first_column, Tipo.STRING);
     }
+    | 'CADENASIM'
+    {
+         $$ = new Literal($1.replace(/\'/g,""), @1.first_line, @1.first_column, Tipo.STRING);
+    }    
     | 'TRUE'
     { 
          $$ = new Literal($1, @1.first_line, @1.first_column, Tipo.BOOLEAN);
@@ -655,20 +691,40 @@ F   : '(' Expr ')'
     { 
          $$ = new Literal($1, @1.first_line, @1.first_column, Tipo.BOOLEAN);
     }
+    | 'NULL'
+    {
+         $$ = new Literal($1, @1.first_line, @1.first_column, Tipo.NULL);
+    }      
     | Length     
-    | llamadaFuncion
+    | llamadaFuncion    
     | 'ID' accesos
     {
         // $$ = new AccesoArray($1, $2, @1.first_line, @1.first_column);
         let lastIndex  = eval('$2');
         lastIndex.id = $1;
         $$ = lastIndex;               
-    }    
+    }
+    | 'ID' '++'
+    {
+        var v1 = new Access($1, @1.first_line, @1.first_column);
+        var v2 =  new Literal(1, @1.first_line, @1.first_column, Tipo.NUMBER);
+        $$ = new ExpresionAritmetica(v1, v2, OperacionesAritmeticas.SUMA, @1.first_line,@1.first_column);
+    }
+    | 'ID' '--'
+    {
+        var v1 = new Access($1, @1.first_line, @1.first_column);
+        var v2 =  new Literal(1, @1.first_line, @1.first_column, Tipo.NUMBER);
+        $$ = new ExpresionAritmetica(v1, v2, OperacionesAritmeticas.RESTA, @1.first_line,@1.first_column);
+    }                 
     | '[' paramsExp ']'
     { 
          $$ = new Arreglo2($2, @1.first_line, @1.first_column);
 
     }
+    | 'ID' {
+         $$ = new Access($1, @1.first_line, @1.first_column);
+    }
+
 /*    | 'ID'  accesosCorchetes {
         // $$ = new AccesoArray($1, $2, @1.first_line, @1.first_column);
         let lastIndex  = eval('$2');
@@ -681,9 +737,6 @@ F   : '(' Expr ')'
         lastIndext.id = $1;
         $$ = lastIndext;       
     }            */
-    | 'ID' {
-         $$ = new Access($1, @1.first_line, @1.first_column);
-    }
 
         
     //LLAMADA A FUNCION
@@ -710,8 +763,7 @@ acceso
     {
 //        $$ = [$2];
           $$ = new AccesoIndice("" , null , $2 , @1.first_line , @1.first_column );
-    }
-    
+    }    
 ;    
 /*
 accesosCorchetes
@@ -821,3 +873,4 @@ atribType
 //TODO pop a arrays
 //TODO arrelar accesos a push y length
 //TODO operacion modulo
+//TODO asignaciones en for
