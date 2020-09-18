@@ -18,8 +18,8 @@ export class Literal extends Expresion{
 
             }
         }else if(this.tipo == Tipo.STRING)
-            return {value : this.value , tipo : Tipo.STRING};            
+            return {value : this.value , tipo : Tipo.STRING};                
         else
-            return { value: this.value , tipo : Tipo.NULL};
+            return { value: null , tipo : Tipo.NULL};
     }
 }
