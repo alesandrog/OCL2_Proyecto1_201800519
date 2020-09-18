@@ -64,7 +64,7 @@ export class Type extends Instruction{
         }
         if(tipo.valor[i].tipo != arr[i][1].tipo){ //verificar que el tipo sea igual
             if((tipo.valor[i].tipo > 7) && (arr[i][1].tipo == Tipo.NULL)){ //es una variable type y puede inicializarse en null
-                //se acepta
+                arr[i][1].tipo = tipo.valor[i].tipo;
             }else{
                 throw new Error_(this.linea, this.columna, 'Semantico', 'Atributos no coinciden con los definidos en ' + tipo.id + " 2");
             }

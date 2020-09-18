@@ -34,7 +34,8 @@
     const { Concatenacion } = require('../Instruction/Concatenacion');  
     const { Incremento } = require('../Instruction/Incremento');      
 
-    const { AsignacionArray } = require('../Instruction/AsignacionArray');    
+    const { AsignacionArray } = require('../Instruction/AsignacionArray');
+    const { AsignacionType } = require('../Instruction/AsignacionType');    
     const { Console } = require('../Instruction/Console');
     const { Switch } = require('../Instruction/Switch');
     const { LlamadaFuncion } = require('../Instruction/LlamadaFuncion');
@@ -214,7 +215,7 @@ instruccion
     | Switch
     | Console
     | funcion
-    | Type
+    | Type ';'
     | llamadaFuncion ';' 
     | ForIn
     | ForOf
@@ -265,7 +266,7 @@ declaracion
         let arr_vacio = new Arreglo2(array, @1.first_line, @1.first_column);
         $$ = new DeclaracionArreglo( $2 , arr_vacio , true, Tipo.ARRAY , $5, $4, @1.first_line , @1.first_column);
     }
-    | 'LET'   'ID' ':' tipo '=' '{' atributosType '}'
+    | 'LET'   'ID' ':' tipo '=' '{' atributosType '}' ';'
     { 
         /* let arr : aidi = { value : piola };*/
        // let tipo = new AccesoTipoType($1 , @1.first_line , @1.first_column);        
@@ -352,16 +353,21 @@ tipo
 
 
 asignacion    
-    : 'ID' accesosCorchetes '=' Expr 
+    : 'ID' accesos '=' Expr 
     {
-        let lastI  = eval('$2');
-        lastI.id = $1;
-        $$ = new AsignacionArray( $1 , $4 , $2, @1.first_line , @1.first_column);
+        //TODO verificar cuando un acceso sea null
+        let lastIndx  = eval('$2');
+        lastIndx.id = $1;  
+        $$ = new AsignacionArray( lastIndx , $4 , @1.first_line , @1.first_column);
     }
     | 'ID' '+=' Expr 
     {
         $$ = new Concatenacion( $1 , $3 , @1.first_line , @1.first_column);
-    }    
+    }
+    | 'ID' '=' '{' atributosType '}' 
+    {
+        $$ = new AsignacionType( $1 , $4 , @1.first_line , @1.first_column);
+    }        
     | 'ID' '=' Expr 
     {
         $$ = new Asignacion( $1 , $3 , @1.first_line , @1.first_column);
@@ -554,21 +560,21 @@ BloqueInstrucciones
 /*-----------------------------------------FUNCIONES------------------------------------------------*/
 
 funcion
-    : 'FUNCTION' 'ID' '(' parametros ')' ':' tipo BloqueInstrucciones 
+    : 'FUNCTION' 'ID' '(' parametros ')' ':' tipo '{' Instrucciones '}'
     {
-        $$ = new Funcion($2 , $8,  $4, $7, @1.first_line , @1.first_column);
+        $$ = new Funcion($2 , $9,  $4, $7, @1.first_line , @1.first_column);
     }
-    | 'FUNCTION' 'ID' '(' parametros ')' BloqueInstrucciones 
+    | 'FUNCTION' 'ID' '(' parametros ')' '{' Instrucciones '}'
     {
-        $$ = new Funcion($2 , $6,  $4, Tipo.NULL, @1.first_line , @1.first_column);
+        $$ = new Funcion($2 , $7,  $4, Tipo.NULL, @1.first_line , @1.first_column);
     }
-    | 'FUNCTION' 'ID' '('  ')' ':' tipo BloqueInstrucciones 
+    | 'FUNCTION' 'ID' '('  ')' ':' tipo '{' Instrucciones '}'
     {
-        $$ = new Funcion($2 , $7, null, $6 , @1.first_line , @1.first_column);
+        $$ = new Funcion($2 , $8, null, $6 , @1.first_line , @1.first_column);
     }
-    | 'FUNCTION' 'ID' '('  ')'  BloqueInstrucciones 
+    | 'FUNCTION' 'ID' '('  ')'  '{' Instrucciones '}'
     {
-        $$ = new Funcion($2 , $5,  null, Tipo.NULL, @1.first_line , @1.first_column);
+        $$ = new Funcion($2 , $6,  null, Tipo.NULL, @1.first_line , @1.first_column);
     }    
 ;
 
