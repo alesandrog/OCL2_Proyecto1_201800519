@@ -13,6 +13,7 @@ export class Entorno{
     public cantidadCiclos : number;
     public cantidadFunciones : number;
     public indiceTipos : number;
+    public typeTemporal : string = "";
     //map de funciones
 
     constructor(public anterior : Entorno | null){
@@ -28,8 +29,10 @@ export class Entorno{
     //TODO errores cuando no existan funciones
     public guardarVariable(id: string, valor: any, tipo:Tipo | number, variable:boolean ){
         let env : Entorno | null = this;
-        if(this.variables.has(id))
+        if(this.variables.has(id)){
+            console.log("ya existe la variable");
             return; //error variable ya declarada en el entorno
+        }
         this.variables.set(id, new Simbolo(valor, id, tipo, variable));
     }
 
@@ -49,21 +52,45 @@ export class Entorno{
 
     public guardarTipo(id: string, valor: any, variable:boolean ){
         let env : Entorno | null = this;
-        while(env != null){
-            if(env.tiposUsuario.has(id)){
-                throw new Error_(0, 0, 'Semantico', 'Tipo '+ id + ' ya se encuentra definido ' );
-            }
-            env = env.anterior;
+        if(env.tiposUsuario.has(id)){
+            throw new Error_(0, 0, 'Semantico', 'Tipo '+ id + ' ya se encuentra definido ' );
         }
         this.tiposUsuario.set(id, new Simbolo(valor, id, this.indiceTipos, variable));
         this.indiceTipos++;
     }
+
+    public actualizarTipo(id: string, valor: any, variable:boolean ){
+        let env : Entorno | null = this;
+        while(env != null){
+            if(env.tiposUsuario.has(id)){
+                let tipo = env.tiposUsuario.get(id);
+                this.tiposUsuario.set(id, new Simbolo(valor, id, tipo?.tipo!, variable));
+            }
+            env = env.anterior;
+        }
+    }
+
 
     public getTipo(id: string) : Simbolo | undefined | null{
         let env : Entorno | null = this;
         while(env != null){
             if(env.tiposUsuario.has(id)){
                 return env.tiposUsuario.get(id);
+            }
+            env = env.anterior;
+        }
+        return null;
+    }
+
+    public buscarTipo(id: number) : Simbolo | undefined | null{
+        let env : Entorno | null = this;
+        let encontrado = false;
+        while(env != null && (encontrado == false)){
+            for(const tipo of env.tiposUsuario){
+                if(tipo[1].tipo == id){
+                    encontrado = true;
+                    return tipo[1];
+                }
             }
             env = env.anterior;
         }
