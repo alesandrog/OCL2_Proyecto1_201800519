@@ -180,6 +180,7 @@ cadenasimple  (\'[^']*\')
 %left '+' '-'
 %left '*' '/'
 %left '**'
+%left '%'
 %left UMENOS
 %right '!'
 
@@ -435,8 +436,21 @@ asignacion
 /*-----------------------------------------Funciones , llamadas y parametros------------------------------------*/
 
 Console 
-    : 'CONSOLE' '.' 'LOG' '(' Expr ')' ';'
+    : 'CONSOLE' '.' 'LOG' '(' ListaConsole ')' ';'
     {   $$ = new Console($5, @1.first_line, @1.first_column);}
+;
+
+
+ListaConsole
+    : ListaConsole ',' Expr
+    {
+        $1.push($3);
+        $$ = $1;
+    }
+    | Expr
+    {
+        $$ = [$1];
+    }
 ;
 
 
@@ -683,6 +697,10 @@ Expr
     | Expr '*' Expr
     { 
         $$ = new ExpresionAritmetica($1, $3, OperacionesAritmeticas.MULTIPLICACION, @1.first_line,@1.first_column);
+    }
+    | Expr '%' Expr
+    { 
+        $$ = new ExpresionAritmetica($1, $3, OperacionesAritmeticas.MODULO, @1.first_line,@1.first_column);
     }       
     | Expr '/' Expr
     {
