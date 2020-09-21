@@ -3,52 +3,79 @@ import { Entorno } from "../Symbol/Entorno";
 import { Expresion } from "../Abstract/Expresion";
 import { env } from "process";
 import { Error_ } from "../Error/Error";
-import { Tipo } from "../Abstract/Retorno";
+import { Retorno, Tipo } from "../Abstract/Retorno";
 import { AccesoIndice } from "../Expression/AccesoIndice";
+import { Simbolo } from "../Symbol/Simbolo";
 
 export class AsignacionArray extends Instruction{
 
-    private id : string;
     private value : Expresion;
     private accesos : AccesoIndice;
 
-    constructor(id: string, value : Expresion, accesos : AccesoIndice, linea : number, columna: number){
+    constructor(accesos : AccesoIndice, value : Expresion,  linea : number, columna: number){
         super(linea, columna);
-        this.id = id;
         this.value = value;
         this.accesos = accesos;
     }
 
     public execute(entorno : Entorno) {
-        const val = this.value.execute(entorno);
-        const variable = entorno.getVariable(this.id);
-        if(variable != null && variable != undefined){
-            if(variable.variable == true){
-                if(variable.tipo != Tipo.NULL){
+        let val : any = this.value.execute(entorno);
+        if(val.tipo == Tipo.ARRAY){
+            val = this.ejecutar(entorno, val);
+        }
 
-                    //Accesar al array y verificar el tipo de variable
-                    let valIndex = this.accesos.execute(entorno);
-
-
-                    if(valIndex == undefined || valIndex == null)
-                        throw new Error_(this.linea, this.columna, 'Semantico', 'Indice invalido ');
-                    
-                    if(valIndex.tipo == val.tipo){
-                        //Modificar el arreglo y guardarlo
-                        valIndex.value = val.value;                 
-                    }else{
-                        throw new Error_(this.linea, this.columna, 'Semantico', 'Tipos incompatibles ' + Tipo[val.tipo] + ' no asignable a ' +  Tipo[valIndex.tipo]);
-                    }
-                
+        const acceso = this.accesos.execute(entorno);
+        if(acceso != null && acceso != undefined){
+                 if(acceso.tipo == val.tipo){
+                    acceso.value = val.value;
                 }else{
-                    //Variable existe pero no ha sido asignada
-                    entorno.guardarVariable(this.id, val.value, val.tipo, true );
+                    if(val.tipo instanceof Simbolo){
+                    
+                        if(acceso.tipo == val.tipo.tipo){
+                            if(val.value instanceof Map){
+                                let newMap = new Map<string , Retorno>();
+                                for(const instr of val.value){
+                                    let iden = instr[0];
+                                    let smbl : Retorno = { value : instr[1].value , tipo : instr[1].tipo};
+                                    newMap.set(iden , smbl);
+                                }
+                                acceso.value = newMap;
+                                return;
+                            }
+                            acceso.value = val.value;
+                            return;
+                        }
+                    }else if( acceso.tipo == "PUSH ARRAY"){
+                        const indice = this.accesos.indice.execute(entorno);
+                        let arreglo = acceso;
+                        if(val.tipo == Tipo.ARRAY){
+                            arreglo.value[indice.value] = val;
+                            arreglo.tipo = Tipo.ARRAY;
+                            return;
+                        }else{
+                            arreglo.value[indice.value] = val;   
+                            return;
+                        }
+                    }
+                    throw new Error_(this.linea, this.columna, 'Semantico', 'Tipos incompatibles ' + val.tipo + ' no asignable a ' +  acceso.tipo);
                 }
-            }else{
-                throw new Error_(this.linea, this.columna, 'Semantico',   'const ' + this.id +' no puede ser re definido');
-            }
         }else{
-            throw new Error_(this.linea, this.columna, 'Semantico','La variable ' + this.id +  ' no esta definida');
+            throw new Error_(this.linea, this.columna, 'Semantico','Acceso Indefinido ');
         }           
     }
+
+    public ejecutar(entorno : Entorno, arreglo : Retorno): Retorno {
+        let res = [];
+        for(const instr of arreglo.value){
+            if(instr.tipo == Tipo.ARRAY){
+                res.push(this.ejecutar(entorno, instr));
+            }else{
+                let val = instr.value;
+                let tip = instr.tipo;
+                res.push({ value : val , tipo : tip });
+            }
+        }
+        return { value : res, tipo : Tipo.ARRAY };
+    }
+
 }
