@@ -3,6 +3,9 @@ import { Entorno } from "../Symbol/Entorno";
 import { Expresion } from "../Abstract/Expresion";
 import { Case } from "./Case";
 import { errores } from "../Error/Errores";
+import { Return } from "./Return";
+import { Break } from "./Break";
+import { Continue } from "./Continue";
 
 
 export class Switch extends Instruction{
@@ -23,14 +26,22 @@ export class Switch extends Instruction{
         for(const instr of this.cases){
             let caseVal = instr.condicion.execute(entorno);
             if(switchVal.value == caseVal.value){
-                instr.execute(entorno);
+                const exec = instr.execute(entorno);
+                if (exec instanceof Break) {
+                    break;
+                  } else if (exec instanceof Continue) continue;
+                  if (exec instanceof Return) return exec;
                 return;
             }
          }
          if(this.def != null){
              entorno.cantidadCiclos++;            
              for(const instr of this.def){
-                instr.execute(entorno)
+                const exec = instr.execute(entorno);
+                if (exec instanceof Break) {
+                    break;
+                  } else if (exec instanceof Continue) continue;
+                  if (exec instanceof Return) return exec;
             }
             entorno.cantidadCiclos--;
          }
