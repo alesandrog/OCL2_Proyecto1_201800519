@@ -35,11 +35,18 @@ export class ExpresionAritmetica extends Expresion {
     const tipoDominante = this.tipoDominante(izq.tipo, der.tipo);
 
     if (this.tipo == OperacionesAritmeticas.SUMA) {
-      if (tipoDominante == Tipo.STRING)
+      if (tipoDominante == Tipo.STRING){
+        let texto = izq.value.toString() + der.value.toString();
+        texto = texto.replace(/\\t/g, "\t");
+        texto = texto.replace(/\\n/g, "\n");
+        texto = texto.replace(/\\r/g, "\n");
+        texto = texto.replace(/\\"/g, "\"");
+        texto = texto.replace(/\\\\/g, "\\");                
         result = {
-          value: izq.value.toString() + der.value.toString(),
-          tipo: Tipo.STRING,
-        };
+            value: texto,
+            tipo: Tipo.STRING,
+          };
+      }
       else if (tipoDominante == Tipo.NUMBER)
         result = { value: izq.value + der.value, tipo: Tipo.NUMBER };
       else
