@@ -13,12 +13,16 @@ export class AccesoType extends Expresion{
     public id : string;
     public anterior : Expresion | AccesoType | AccesoIndice | null;
     public indice : string;
+    public final : boolean = false;
+    public tipoAcc : string;
 
-    constructor(id: string,  anterior : Expresion | AccesoType | AccesoIndice | null , indice : string ,linea : number, columna: number){
+    constructor(id: string,  anterior : Expresion | AccesoType | AccesoIndice | null , indice : string , final : boolean,tipoAcc : string , linea : number, columna: number){
         super(linea, columna);
         this.id = id;
         this.anterior = anterior;
         this.indice = indice;
+        this.final = final;
+        this.tipoAcc = tipoAcc;
     }
 
     //TODO validar null y undefined, mensajes de error
@@ -29,8 +33,12 @@ export class AccesoType extends Expresion{
             if(this.anterior instanceof AccesoType || this.anterior instanceof AccesoIndice){
                 this.anterior.id = this.id;
                 //retorno el map
-                valor = this.anterior.execute(entorno).value;
-                let res = valor.get(this.indice);
+                valor = this.anterior.execute(entorno);
+                if(valor == null || valor.value == null){
+                    return { value:null , tipo : valor.tipo};
+                }
+                valor = valor.value;
+                let res = valor.get(this.indice);                
                 return res;    
             }
         }else{
@@ -38,6 +46,9 @@ export class AccesoType extends Expresion{
             type = entorno.getVariable(this.id);
             if(type.tipo > 7){
             let res = type.valor.get(this.indice);
+            if(res == null){
+                return { value:null , tipo : type.tipo};
+            }
             return res;
             }
         }

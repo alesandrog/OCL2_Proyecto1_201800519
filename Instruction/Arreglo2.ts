@@ -15,9 +15,11 @@ export class Arreglo2 extends Expresion{
 
         let res : Array<Expresion> = new Array();
 
-        for(const instr of this.value){
-            const exe = instr.execute(entorno);
-            res.push(exe);
+        if(this.value != null){
+            for(const instr of this.value){
+                const exe = instr.execute(entorno);
+                res.push(exe);
+            }
         }
         this.value = res;
         return { value : this.value , tipo : Tipo.ARRAY  };
