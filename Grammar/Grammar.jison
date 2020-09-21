@@ -14,7 +14,7 @@
     const { Arreglo } = require('../Expression/Arreglo');
     const { AccesoType } = require('../Expression/AccesoType');
     const { AtributoType } = require('../Expression/AtributoType');
-
+    const { Ternario } = require('../Expression/Ternario');
     
     const { Arreglo2 } = require('../Instruction/Arreglo2');    
     const { Type } = require('../Instruction/Types');    
@@ -230,6 +230,10 @@ instruccion
     | 'CONTINUE' ';'
     {
         $$ = new Continue(@1.first_line , @1.first_column);
+    }
+    | 'RETURN' ternario ';'
+    {
+        $$ = new Return($2 , @1.first_line , @1.first_column);
     }
     | 'RETURN' Expr ';'
     {
@@ -964,10 +968,17 @@ atribType
     }
 ;
 
+
+
+ternario
+    :  Expr '?' Expr ':' Expr
+    {
+        $$ = new Ternario($1 , $3, $5, @1.first_line , @1.first_column);
+    } 
+;
+
+
 //TODO  strings con valores incrustados
-//TODO += , ++ , --
-//TODO valores nulos en types
 //TODO pop a arrays
-//TODO arrelar accesos a push y length
 //TODO operacion modulo
 //TODO asignaciones en for
