@@ -255,16 +255,14 @@ instruccion
 /*--------------------------------------Declaracion y Asignacion de variables----------------------------------*/
 
 declaracion
-    : 'LET'   'ID' ':' tipo corchetes '='  Expr ';'
+    : 'LET'   'ID' ':' tipo corchetes '=' corchetesVacios ';'
+    { 
+        $$ = new DeclaracionArreglo( $2 , $7 , true, Tipo.ARRAY , $5, $4, @1.first_line , @1.first_column);
+    }
+    | 'LET'   'ID' ':' tipo corchetes '='  Expr ';'
     { 
         /* let arr : number[][] = [[5]];*/        
         $$ = new DeclaracionArreglo( $2 , $7 , true, Tipo.ARRAY , $5, $4, @1.first_line , @1.first_column);
-    }
-    | 'LET'   'ID' ':' tipo corchetes '=' '[' ']' ';'
-    { 
-        let array = [];
-        let arr_vacio = new Arreglo2(array, @1.first_line, @1.first_column);
-        $$ = new DeclaracionArreglo( $2 , arr_vacio , true, Tipo.ARRAY , $5, $4, @1.first_line , @1.first_column);
     }
     | 'LET'   'ID' ':' tipo '=' '{' atributosType '}' ';'
     { 
@@ -297,6 +295,11 @@ declaracion
         /* let arr; */
         $$ = new Declaration( $2 , null , true, Tipo.NULL, @1.first_line , @1.first_column);
     }
+    | 'CONST' 'ID' ':' tipo corchetes '=' corchetesVacios ';'
+    { 
+        /* const arr : number[][] = [[5]];*/
+        $$ = new DeclaracionArreglo( $2 , $7 , false, Tipo.ARRAY , $5, $4, @1.first_line , @1.first_column);
+    }    
     | 'CONST' 'ID' ':' tipo corchetes '=' Expr ';'
     { 
         /* const arr : number[][] = [[5]];*/
@@ -327,8 +330,49 @@ corchetes
 ;
 
 
+corchetesVacios
+    :  '[' masCorchetes ']'
+    {
+         $$ = new Arreglo2($2, @1.first_line, @1.first_column); 
+    }
+    | '[' ']'
+    {
+         $$ = new Arreglo2(null, @1.first_line, @1.first_column); 
+    }
+;
+
+masCorchetes
+    :  masCorchetes ',' corcheteFinal
+    {        
+        $1.push($3);
+        $$ = $1;
+    }
+    | corcheteFinal
+    {
+        $$ = [$1];
+    }
+;
+
+corcheteFinal
+    : '[' corcheteFinal ']'
+    {
+/*        if($2 == null){
+         $$ = new Arreglo2(null, @1.first_line, @1.first_column);
+        }else{
+        let arrf = [$2]; 
+         $$ = new Arreglo2(arrf, @1.first_line, @1.first_column);             
+        }*/
+        let arrf = [$2]; 
+         $$ = new Arreglo2(arrf, @1.first_line, @1.first_column);             
+    }
+    | '[' ']'
+    {
+         $$ = new Arreglo2(null, @1.first_line, @1.first_column);
+    }
+;
+
 tipo
-    : 'NUMBER'
+    : 'NUMBER' 
     {
         $$ = Tipo.NUMBER;
     }
@@ -353,12 +397,21 @@ tipo
 
 
 asignacion    
-    : 'ID' accesos '=' Expr 
+    : 'ID' accesos '=' corchetesVacios 
     {
         //TODO verificar cuando un acceso sea null
         let lastIndx  = eval('$2');
         lastIndx.id = $1;  
+        lastIndx.tipoAcc = "asig";        
         $$ = new AsignacionArray( lastIndx , $4 , @1.first_line , @1.first_column);
+    }
+    | 'ID' accesos '=' Expr 
+    {
+        //TODO verificar cuando un acceso sea null
+        let lastIndx2  = eval('$2');
+        lastIndx2.id = $1;  
+        lastIndx2.tipoAcc = "asig";          
+        $$ = new AsignacionArray( lastIndx2 , $4 , @1.first_line , @1.first_column);
     }
     | 'ID' '+=' Expr 
     {
@@ -396,10 +449,11 @@ Pushear
     } 
 ;
 Length
-    : 'ID' accesosCorchetes '.' 'LENGTH' 
+    : 'ID' accesos '.' 'LENGTH' 
     {
         let lastI3  = eval('$2');
-        lastI3.id = $1;        
+        lastI3.id = $1;
+        lastI3.tipoAcc = "exp";        
         $$ = new Length($1 , $2, @1.first_line, @1.first_column);
     } 
     | 'ID'  '.' 'LENGTH'
@@ -591,10 +645,14 @@ parametros
 ;
 
 parametro
-    : 'ID' ':' tipo
+    : 'ID' ':' tipo corchetes
+    {
+        $$ = new Parametro($1 , Tipo.ARRAY , @1.first_line , @1.first_column);
+    }
+    | 'ID' ':' tipo 
     {
         $$ = new Parametro($1 , $3 , @1.first_line , @1.first_column);
-    }
+    }    
 ;
 
 
@@ -708,6 +766,7 @@ F   : '(' Expr ')'
         // $$ = new AccesoArray($1, $2, @1.first_line, @1.first_column);
         let lastIndex  = eval('$2');
         lastIndex.id = $1;
+        lastIndex.tipoAcc = "exp";
         $$ = lastIndex;               
     }
     | 'ID' '++'
@@ -753,7 +812,9 @@ accesos
     : accesos acceso
     {
         let acc = eval('$2');
-        acc.anterior = $1;
+        let ant = eval('$1');
+        ant.final = false;
+        acc.anterior = ant;
         $$ = acc;
     }
     | acceso
@@ -763,14 +824,42 @@ acceso
     : '.' 'ID'
     {
 //        $$ = [$2];
-          $$ = new AccesoType("" , null , $2 , @1.first_line , @1.first_column );
+          $$ = new AccesoType("" , null , $2 , false,"asig", @1.first_line , @1.first_column );
     }
     | '[' Expr ']'
     {
 //        $$ = [$2];
-          $$ = new AccesoIndice("" , null , $2 , @1.first_line , @1.first_column );
+          $$ = new AccesoIndice("" , null , $2 , true, "asig", @1.first_line , @1.first_column);
     }    
-;    
+;
+
+/*
+accesosExp
+    : accesosExp accesoExp
+    {
+        let acc = eval('$2');
+        let ant = eval('$1');
+        ant.final = false;
+        acc.anterior = ant;
+        $$ = acc;
+    }
+    | accesoExp
+;
+
+accesoExp
+    : '.' 'ID'
+    {
+//        $$ = [$2];
+          $$ = new AccesoType("" , null , $2 , false, "exp", @1.first_line , @1.first_column );
+    }
+    | '[' Expr ']'
+    {
+//        $$ = [$2];
+          $$ = new AccesoIndice("" , null , $2 , true, "exp", @1.first_line , @1.first_column);
+    }    
+;
+
+*/
 /*
 accesosCorchetes
     : accesosCorchetes '[' Expr ']'
@@ -817,7 +906,9 @@ llamadaFuncion
 paramsExp
     : paramsExp ',' Expr
     {
+        if($3 != "null"){
         $1.push($3);
+        }
         $$ = $1;
     }
     | Expr
