@@ -4,7 +4,7 @@ export const Tipos = [
 
 /*                  NUMBER      STRING         BOOLEAN       VOID         TYPE          ARRAY         NULL*/                
             [
-/* NUMBER*/      Tipo.NUMBER,  Tipo.STRING,   Tipo.NUMBER,   Tipo.ERR,    Tipo.ERR,     Tipo.ERR,     Tipo.ERR
+/* NUMBER*/      Tipo.NUMBER,  Tipo.STRING,   Tipo.NUMBER,   Tipo.ERR,    Tipo.ERR,     Tipo.ERR,     Tipo.NULL
             ],
             [
 /* STRING*/      Tipo.STRING,  Tipo.STRING,   Tipo.STRING,   Tipo.ERR,    Tipo.STRING,  Tipo.STRING,  Tipo.ERR
